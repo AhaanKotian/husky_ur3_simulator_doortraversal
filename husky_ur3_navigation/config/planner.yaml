@@ -94,3 +94,12 @@ DWAPlannerROS:
 
   # # Oscillation Prevention Parameters
   # oscillation_reset_dist: 0.25 #How far the robot must travel in meters before oscillation flags are reset (double, default: 0.05)
+
+SBPLLatticePlanner:
+  primitive_filename: '/home/ahaan/iitb_ws/src/husky_ur3_simulator/husky_ur3_navigation/config/husky_ur3'
+  environment_type: XYThetaLattice
+  planner_type: ARAPlanner
+  allocated_time: 5.0
+  initial_epsilon: 3.0
+  forward_search: false
+  allow_unknown: true
