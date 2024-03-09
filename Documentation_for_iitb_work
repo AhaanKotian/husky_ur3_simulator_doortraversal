@@ -1,0 +1,9 @@
+Run these commands in terminal to run to husky_ur3_simulator_doortraversal for door traversal task:
+1. roslaunch husky_ur3_gazebo husky_empty_world.launch world_name:=/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/worlds/door_traversal_world.world
+
+2. roslaunch husky_ur3_gripper_moveit_config Omni_control.launch 
+
+3. roslaunch husky_ur3_navigation husky_ur3_amcl.launch map_file:=/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/maps/door_traversal_world.yaml
+
+
+
