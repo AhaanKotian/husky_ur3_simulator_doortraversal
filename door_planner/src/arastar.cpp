@@ -112,10 +112,21 @@ unsigned int ARAStar::fvalue(State s)
 void ARAStar::improvePath()
 {
     State s; bool found = false;
+   
+    // if( goal.idx == (*(open.begin())).idx )
+    //     open.erase(*(open.begin()));
+    ROS_INFO_STREAM(" fvalue(goal) = "<<fvalue(goal)<<" & goal.idx = "<<goal.idx<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin()))<<" & (*(open.begin())).idx = "<<(*(open.begin())).idx<<" & open.size() = "<<open.size());
+
     while( fvalue(goal) > fvalue(*(open.begin())) )
     {
         s = *(open.begin()); open.erase(*(open.begin()));
-        //ROS_INFO_STREAM(" State s.idx = "<<s.idx<<" & goal.idx = "<<goal.idx<<" & fvalue(goal) = "<<fvalue(goal)<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin())));
+        //ROS_INFO_STREAM(" State s.idx = "<<s.idx<<" & goal.idx = "<<goal.idx<<" & fvalue(s) = "<<fvalue(s)<<" & fvalue(goal) = "<<fvalue(goal)<< " & epsilon = "<<epsilon<<" open.size() = "<<open.size());
+        //comments from here
+        // vector<int> goal_succ;
+        // goal_succ = compute_successors_idx_set(goal);
+        // if(find(goal_succ.begin(), goal_succ.end(), goal.idx) != goal_succ.end())
+        //     ROS_INFO_STREAM(" State s.idx = "<<s.idx<<" & fvalue(s) = "<<fvalue(s)<< " & epsilon = "<<epsilon<<" open.size() = "<<open.size());
+        // till here
         closed.insert(s);
         vector<int> successors;
         //ROS_INFO_STREAM(" Pre compute successors");
@@ -131,21 +142,22 @@ void ARAStar::improvePath()
             if(visited[succ_idx]==NULL)
             {
                 State successor(succ_idx,double(INT16_MAX),heuristic(succ_idx),epsilon);
-                visited[succ_idx]=&successor;
+                if(succ_idx == goal.idx)
+                    visited[succ_idx]=&goal;
+                else
+                    visited[succ_idx]=&successor;
+                //visited[succ_idx]=&successor;
                 succ = visited[succ_idx];
                 pred[succ_idx] = s.idx;
-                if(succ_idx == goal.idx)
-                {
-                    //ROS_INFO_STREAM(" succ_idx("<<succ_idx<<") == goal("<<goal.idx<<")");
-                    found=true;
-                    break;
-                }
+                
             }
             
             if((*succ).g > s.g + cost(s,(*succ)))
             {
                 //ROS_INFO_STREAM(" Pre g updation (*succ).idx = "<<((*succ).idx));
                 (*succ).g = s.g + cost(s,(*succ));
+                if((*succ).idx == goal.idx)
+                    ROS_INFO_STREAM(" (*succ).idx = "<<(*succ).idx<<" & goal.idx = "<<goal.idx<<" & (*succ).g = "<<(*succ).g<<" & goal.g = "<<goal.g);
                 //check this part--> [
                 //ROS_INFO_STREAM(" (*succ).idx = "<<(*succ).idx<<" (*succ).g = "<<(*succ).g<<" (*succ).h = "<<(*succ).h<<" (*succ).epsilon = "<<(*succ).epsilon);
                 //auto it = closed.find((*succ));
@@ -160,9 +172,15 @@ void ARAStar::improvePath()
                 else
                     incons.insert((*succ));
             }
+            // if(succ_idx == goal.idx)
+            // {
+            //     ROS_INFO_STREAM(" succ_idx("<<succ_idx<<") == goal("<<goal.idx<<")");
+            //     found=true;
+            //     break;
+            // }
         }
-        if(found==true){
-            break;}
+        // if(found==true){
+        //     break;}
         // ROS_INFO_STREAM(" openi print: = ");
         // for(auto openi:open)
         // {
@@ -171,7 +189,7 @@ void ARAStar::improvePath()
 
         //ROS_INFO_STREAM(" Post for(int succ_idx:successors)");
     }
-    pred[goal.idx] = s.idx;
+    //pred[goal.idx] = s.idx;
 };
 vector<int> ARAStar::search()
 {
@@ -188,7 +206,7 @@ vector<int> ARAStar::search()
         closed.clear();
         ROS_INFO_STREAM(" ARAStar::search() pre second improvePath()");
         improvePath();
-        ROS_INFO_STREAM(" ARAStar::search() pre second improvePath()");
+        ROS_INFO_STREAM(" ARAStar::search() post second improvePath()");
         //publish current epsilon-suboptimal solution
     }
     return compute_idx_path();

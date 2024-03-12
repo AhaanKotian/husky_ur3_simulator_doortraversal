@@ -85,7 +85,7 @@ namespace door_global_planner
         //goal_node.idx = destination;
         int source = start_idx_oned;
 
-        double epsilon = 1.0;
+        double epsilon = 5.0;
         ROS_INFO_STREAM(" Pre ARAStar planner() ");
         ARAStar planner(source,destination,costmap_,epsilon);
         ROS_INFO_STREAM(" Post ARAStar planner() ");
