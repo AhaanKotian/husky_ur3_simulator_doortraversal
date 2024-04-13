@@ -9,8 +9,12 @@ Panels:
         - /Path1
         - /ee_link1/Frames1
         - /Path2
+        - /Marker1
+        - /Polygon1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
-    Tree Height: 223
+    Tree Height: 334
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -1579,9 +1583,12 @@ Visualization Manager:
         Grid: true
         Husky_control: true
         Map: true
+        Marker: true
         MotionPlanning: true
         Path: true
+        Polygon: true
         RobotModel: true
+        TF: true
         UR3_control: true
         Value: true
         base_link: true
@@ -1605,9 +1612,12 @@ Visualization Manager:
         Grid: true
         Husky_control: true
         Map: true
+        Marker: true
         MotionPlanning: true
         Path: true
+        Polygon: true
         RobotModel: true
+        TF: true
         UR3_control: true
         Value: true
         base_link: true
@@ -1641,6 +1651,231 @@ Visualization Manager:
       Topic: /move_base/DWAPlannerROS/local_plan
       Unreliable: false
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /visualize_workspace/visualization_marker
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Alpha: 1
+      Class: rviz/Polygon
+      Color: 25; 255; 0
+      Enabled: true
+      Name: Polygon
+      Queue Size: 10
+      Topic: /move_base/global_costmap/footprint
+      Unreliable: false
+      Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        base:
+          Value: false
+        base_footprint:
+          Value: false
+        base_link:
+          Value: true
+        control_box_ur3_link:
+          Value: false
+        ee_link:
+          Value: true
+        forearm_link:
+          Value: false
+        front_bumper_link:
+          Value: false
+        front_laser_base_link:
+          Value: false
+        front_laser_link:
+          Value: false
+        front_left_wheel_link:
+          Value: false
+        front_right_wheel_link:
+          Value: false
+        g_camera_bottom_screw_frame:
+          Value: false
+        g_camera_color_frame:
+          Value: false
+        g_camera_color_optical_frame:
+          Value: false
+        g_camera_depth_frame:
+          Value: false
+        g_camera_depth_optical_frame:
+          Value: false
+        g_camera_infra1_frame:
+          Value: false
+        g_camera_infra1_optical_frame:
+          Value: false
+        g_camera_infra2_frame:
+          Value: false
+        g_camera_infra2_optical_frame:
+          Value: false
+        g_camera_link:
+          Value: false
+        h_camera_bottom_screw_frame:
+          Value: false
+        h_camera_color_frame:
+          Value: false
+        h_camera_color_optical_frame:
+          Value: false
+        h_camera_depth_frame:
+          Value: false
+        h_camera_depth_optical_frame:
+          Value: false
+        h_camera_infra1_frame:
+          Value: false
+        h_camera_infra1_optical_frame:
+          Value: false
+        h_camera_infra2_frame:
+          Value: false
+        h_camera_infra2_optical_frame:
+          Value: false
+        h_camera_link:
+          Value: false
+        imu_link:
+          Value: false
+        inertial_link:
+          Value: false
+        map:
+          Value: true
+        odom:
+          Value: true
+        rear_bumper_link:
+          Value: false
+        rear_left_wheel_link:
+          Value: false
+        rear_right_wheel_link:
+          Value: false
+        rh_p12_rn_base:
+          Value: false
+        rh_p12_rn_l1:
+          Value: false
+        rh_p12_rn_l2:
+          Value: false
+        rh_p12_rn_r1:
+          Value: false
+        rh_p12_rn_r2:
+          Value: false
+        shoulder_link:
+          Value: false
+        tool0:
+          Value: false
+        top_chassis_link:
+          Value: false
+        top_plate_front_link:
+          Value: false
+        top_plate_link:
+          Value: true
+        top_plate_rear_link:
+          Value: false
+        upper_arm_link:
+          Value: false
+        ur3_base_link:
+          Value: true
+        user_rail_link:
+          Value: false
+        wrist_1_link:
+          Value: false
+        wrist_2_link:
+          Value: false
+        wrist_3_link:
+          Value: false
+      Marker Alpha: 1
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        map:
+          odom:
+            base_link:
+              base_footprint:
+                {}
+              front_bumper_link:
+                {}
+              front_left_wheel_link:
+                {}
+              front_right_wheel_link:
+                {}
+              imu_link:
+                {}
+              inertial_link:
+                {}
+              rear_bumper_link:
+                {}
+              rear_left_wheel_link:
+                {}
+              rear_right_wheel_link:
+                {}
+              top_chassis_link:
+                {}
+              top_plate_link:
+                control_box_ur3_link:
+                  {}
+                front_laser_base_link:
+                  front_laser_link:
+                    {}
+                h_camera_bottom_screw_frame:
+                  h_camera_link:
+                    h_camera_color_frame:
+                      h_camera_color_optical_frame:
+                        {}
+                    h_camera_depth_frame:
+                      h_camera_depth_optical_frame:
+                        {}
+                    h_camera_infra1_frame:
+                      h_camera_infra1_optical_frame:
+                        {}
+                    h_camera_infra2_frame:
+                      h_camera_infra2_optical_frame:
+                        {}
+                top_plate_front_link:
+                  {}
+                top_plate_rear_link:
+                  {}
+                ur3_base_link:
+                  base:
+                    {}
+                  shoulder_link:
+                    upper_arm_link:
+                      forearm_link:
+                        wrist_1_link:
+                          wrist_2_link:
+                            wrist_3_link:
+                              ee_link:
+                                g_camera_bottom_screw_frame:
+                                  g_camera_link:
+                                    g_camera_color_frame:
+                                      g_camera_color_optical_frame:
+                                        {}
+                                    g_camera_depth_frame:
+                                      g_camera_depth_optical_frame:
+                                        {}
+                                    g_camera_infra1_frame:
+                                      g_camera_infra1_optical_frame:
+                                        {}
+                                    g_camera_infra2_frame:
+                                      g_camera_infra2_optical_frame:
+                                        {}
+                                rh_p12_rn_base:
+                                  rh_p12_rn_l1:
+                                    rh_p12_rn_l2:
+                                      {}
+                                  rh_p12_rn_r1:
+                                    rh_p12_rn_r2:
+                                      {}
+                              tool0:
+                                {}
+              user_rail_link:
+                {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -1669,7 +1904,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.2850887775421143
+      Distance: 12.888375282287598
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1677,17 +1912,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.8975921869277954
-        Y: -0.429293692111969
-        Z: 0.7213090062141418
+        X: 1.0195447206497192
+        Y: -0.38383540511131287
+        Z: 0.6041405200958252
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5497965812683105
+      Pitch: 0.4647965729236603
       Target Frame: <Fixed Frame>
-      Yaw: 5.653590679168701
+      Yaw: 5.82358980178833
     Saved: ~
 Window Geometry:
   Displays:
@@ -1699,7 +1934,7 @@ Window Geometry:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001f30000035ffc020000000dfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d00000162000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e006701000001a5000001f70000017d00fffffffb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000029a000001880000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000001600000016000000010000016f0000035ffc0200000005fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d0000010e000000a400fffffffb0000001c0067007200690070007000650072005f00630061006d0065007200610100000151000001100000001600fffffffb00000018006800750073006b0079005f00630061006d0065007200610100000267000001350000001600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073800000039fc0100000002fb0000000800540069006d0065010000000000000738000003bc00fffffffb0000000800540069006d00650100000000000004500000000000000000000003ca0000035f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001f30000035ffc020000000dfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d000001d1000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000214000001880000017d00fffffffb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000029a000001880000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000001600000016000000010000016f0000035ffc0200000005fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d0000010e000000a400fffffffb0000001c0067007200690070007000650072005f00630061006d0065007200610100000151000001100000001600fffffffb00000018006800750073006b0079005f00630061006d0065007200610100000267000001350000001600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073800000039fc0100000002fb0000000800540069006d0065010000000000000738000003bc00fffffffb0000000800540069006d00650100000000000004500000000000000000000003ca0000035f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Run the Gazebo with door_travseral_world-->
+  <include file="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/husky_ur3_gazebo/launch/husky_ur3_door_travsersal_world.launch" />
+
+  <!--- Run Omni_control.launch -->
+  <include file="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/husky_ur3_gripper_moveit_config/launch/Omni_control.launch" />
+
+  <!--- Run husky_ur3_amcl.launch -->
+  <include file="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/husky_ur3_navigation/launch/husky_ur3_amcl.launch" />
+
+</launch>

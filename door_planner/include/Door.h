@@ -3,7 +3,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/Path.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <angles/angles.h>
 #include <base_local_planner/world_model.h>
@@ -17,16 +17,12 @@
 #include <cmath>
 #include <random>
 
-using namespace std;
-
-class State
+class Door
 {
 public:
-    unsigned int idx;//index of node in 1D array map[]
-    double g;// path length from start
-    double h;//heuristic i.e. diagonal distance to goal
-    unsigned int a; // area indicator;  values = [0,4]
-    double epsilon;
-    State();
-    State(unsigned int idx, double g, double h, double epsilon, unsigned int a);
+    geometry_msgs::PointStamped door_hinge_point;
+    geometry_msgs::PointStamped door_handle_point;
+    double length,radius;
+    double max_door_angle_degree;// data type is in because 1 degree discretization of door angle
+    Door();
 };

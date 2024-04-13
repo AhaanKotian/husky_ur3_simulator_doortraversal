@@ -38,8 +38,16 @@ namespace door_global_planner
             return false;
         }
 
-        ROS_INFO("Got a start: %.2f, %.2f, and a goal: %.2f, %.2f", start.pose.position.x, start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
+        if(!ros::isInitialized())
+        {
+            int argc = 0;
+            char **argv = NULL;
 
+            ros::init(argc,argv,"door_planner",ros::init_options::NoSigintHandler);
+        }
+
+        ROS_INFO("Got a start: %.2f, %.2f, and a goal: %.2f, %.2f in frame:", start.pose.position.x, start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
+        ROS_INFO_STREAM("start.header.frame_id = "<<start.header.frame_id<<" & goal.header.frame_id = "<<goal.header.frame_id);
         plan.clear();
         costmap_ = costmap_ros_->getCostmap();
         map = costmap_->getCharMap();
@@ -85,32 +93,40 @@ namespace door_global_planner
         //goal_node.idx = destination;
         int source = start_idx_oned;
 
-        double epsilon = 5.0;
+        double epsilon = 1.0;
         ARAStar planner(source,destination,costmap_,epsilon);
-        vector<int> path;
-        path = planner.search();
-
-        ROS_INFO_STREAM(" PATH.SIZE() = "<<path.size());
-        ros::Time plan_time = ros::Time::now();
-        for(int i=0;i<path.size();i++)
-        {
-            geometry_msgs::PoseStamped pose;
-            pose.header.stamp = plan_time;
-            pose.header.frame_id = start.header.frame_id;
-            unsigned int mx1,my1;
-            costmap_->indexToCells(path[i],mx1,my1);
-            double wx,wy;
-            costmap_->mapToWorld(mx1,my1,wx,wy);
-            pose.pose.position.x = wx;
-            pose.pose.position.y = wy;
-            pose.pose.position.z = 0.0;
-            pose.pose.orientation.x = 0.0;
-            pose.pose.orientation.y = 0.0;
-            pose.pose.orientation.z = 0.0;
-            pose.pose.orientation.w = 1.0;
-            plan.push_back(pose);
-            ROS_INFO_STREAM(" x = "<<plan[i].pose.position.x<<" AND y = "<<plan[i].pose.position.y<<" for path["<<i<<"] = "<<path[i]);
-        }
+        plan = planner.search();
+        // //create ros node
+        // planner.rosNode.reset(new ros::NodeHandle("door_planner"));
+        // vector<unsigned int> path;
+        // path = planner.search();
+        
+        // ROS_INFO_STREAM(" PATH.SIZE() = "<<path.size());
+        // ros::Time plan_time = ros::Time::now();
+        // for(int i=0;i<path.size();i++)
+        // {
+        //     geometry_msgs::PoseStamped pose;
+        //     pose.header.stamp = plan_time;
+        //     pose.header.frame_id = start.header.frame_id;
+        //     unsigned int mx1,my1;
+        //     costmap_->indexToCells(path[i],mx1,my1);
+        //     double wx,wy;
+        //     costmap_->mapToWorld(mx1,my1,wx,wy);
+        //     pose.pose.position.x = wx;
+        //     pose.pose.position.y = wy;
+        //     pose.pose.position.z = 0.0;
+        //     pose.pose.orientation.x = 0.0;
+        //     pose.pose.orientation.y = 0.0;
+        //     pose.pose.orientation.z = 0.0;
+        //     pose.pose.orientation.w = 1.0;
+        //     plan.push_back(pose);
+        //     ROS_INFO_STREAM(" x = "<<plan[i].pose.position.x<<" AND y = "<<plan[i].pose.position.y<<" for path["<<i<<"] = "<<path[i]);
+        // }
+        // nav_msgs::Path robot_path;
+        // robot_path.header.frame_id = "map";
+        // robot_path.poses = plan;
+        // // planner.msg.robot_pose = robot_path;
+        // // planner.robot_door_handle_path_pub.publish(planner);
 
         return true;
     }

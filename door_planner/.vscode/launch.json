@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ROS: Launch",
+            "request": "launch",
+            "target": "/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/husky_ur3_navigation/launch/husky_ur3_amcl.launch",
+            "launch": [
+                "rviz",
+                "gz",
+                "gzclient",
+                "gzserver"
+            ],
+            "type": "ros"
+        }
+    ]
+}

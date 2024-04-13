@@ -4,7 +4,7 @@
 
   <!-- Run the map server -->
   <!--arg name="map_file" default="$(find husky_ur3_navigation)/map/gaitech_world.yaml"/-->
-  <arg name="map_file" default="$(find husky_ur3_navigation)/map/playpen_map.yaml"/>
+  <arg name="map_file" default="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/maps/door_traversal_v2_0_1.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   <!--- Run AMCL -->

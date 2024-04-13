@@ -25,7 +25,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 -->
 <launch>
 
-  <arg name="world_name" default="worlds/empty.world"/>
+  <arg name="world_name" default="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/worlds/door_traversal_world_1.world"/>
 
   <arg name="laser_enabled" default="false"/>
   <!-- <arg name="kinect_enabled" default="false"/> -->

@@ -1,16 +1,4 @@
 {
-    "files.associations": {
-        "unordered_map": "cpp",
-        "cmath": "cpp",
-        "complex": "cpp",
-        "array": "cpp",
-        "bitset": "cpp",
-        "string_view": "cpp",
-        "initializer_list": "cpp",
-        "utility": "cpp",
-        "vector": "cpp"
-    },
-    "cmake.configureOnOpen": true,
     "python.autoComplete.extraPaths": [
         "/home/ahaan/iitb_ws/devel/lib/python3/dist-packages",
         "/home/ahaan/catkin_ws/devel/lib/python3/dist-packages",
