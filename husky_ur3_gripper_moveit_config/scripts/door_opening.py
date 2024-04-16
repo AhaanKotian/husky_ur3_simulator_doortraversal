@@ -4,6 +4,7 @@
 import sys
 import rospy
 import copy, math
+import tf
 from math import pi, radians, degrees, atan2, sqrt
 from moveit_commander import MoveGroupCommander, RobotCommander 
 from moveit_commander import PlanningSceneInterface, roscpp_initialize, roscpp_shutdown
@@ -20,6 +21,7 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from std_msgs.msg import String
 from nav_msgs.msg import Path
 from robot_to_door_handle_msg.msg import Message
+from trac_ik_python.trac_ik import IK
 
 
 #GROUP_NAME_GRIPPER = "NAME OF GRIPPER"
@@ -27,6 +29,9 @@ roscpp_initialize(sys.argv)
 rospy.init_node('door_opening_s2', anonymous=True)
 robot = RobotCommander()
 scene = PlanningSceneInterface()
+
+ik_solver = IK("ur3_base_link","gripper_link")
+seed_state = [0.0] * ik_solver.number_of_joints
 
 
 
@@ -44,33 +49,24 @@ display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path
                                                queue_size=20)
 move_group.go([1.57,-2.27,1.93,-1.19,-1.57,0], wait=True)
 
-# def computeCartesianPath(msg):
-    
-#     waypoints = []
-#     for pose_i in msg.poses:
-#         waypoints.append(copy.deepcopy(pose_i.pose))
-   
+listener = tf.TransformListener()
 
-#     # We want the Cartesian path to be interpolated at a resolution of 1 cm
-#     # which is why we will specify 0.01 as the eef_step in Cartesian
-#     # translation.  We will disable the jump threshold by setting it to 0.0 disabling:
-#     (plan, fraction) = move_group.compute_cartesian_path(
-#                                        waypoints,   # waypoints to follow
-#                                        0.1,        # eef_step
-#                                        0.0)         # jump_threshold
-
-#     #displaying plan
-#     display_trajectory = moveit_msgs.msg.DisplayTrajectory()
-#     display_trajectory.trajectory_start = robot.get_current_pose()
-#     display_trajectory.trajectory.append(plan)
-#     display_trajectory_publisher.publish(display_trajectory)
-
-#     move_group.execute(plan,wait=True)
-# sub = rospy.Subscriber("/door_planner/door_handle_path", Path, computeCartesianPath)
 
 msg = rospy.wait_for_message("/door_planner/door_handle_path", Message, timeout=2000)
 waypoints = []
 for pose_i in msg.door_handle_pose.poses:
+
+    while not rospy.is_shutdown():
+        try:
+            (trans,rot) = listener.lookupTransform('/map', '/ur3_base_link', rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
+    door_handle_pose_transformed = listener.transformPose("ur3_base_link",pose_i)
+    
+    ik_solver.get_ik(seed_state,
+                door_handle_pose_transformed.pose.position.x, door_handle_pose_transformed.pose.position.y, door_handle_pose_transformed.pose.position.z,
+                door_handle_pose_transformed.pose.orientation.x, door_handle_pose_transformed.pose.orientation.y, door_handle_pose_transformed.pose.orientation.z, door_handle_pose_transformed.pose.orientation.w)
+    
     waypoints.append(copy.deepcopy(pose_i.pose))
 
 
@@ -94,8 +90,10 @@ move_group.execute(plan,wait=True)
 # speed = Twist()
 
 # r = rospy.Rate(4)
+def amcl_pose_callback(msg) :
+    p
 
-
+sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, amcl_pose_callback)
 
 
 # ## 매니퓰레이터 변수 선언
@@ -193,20 +191,4 @@ move_group.execute(plan,wait=True)
 # move_group.go(joint_goal, wait=True)
 
 # move_group.stop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
  

@@ -68,7 +68,7 @@ public:
     double cost(State s, State succ);
     bool is_occupied(unsigned int succ_idx, unsigned int s_idx);
     bool in_closed(State* succ);
-    bool is_action_feasible(State s, unsigned int succ_idx,vector<unsigned int> succ_rda);
+    bool is_action_feasible(State s,unsigned int succ_idx,vector<unsigned int> succ_rda,unsigned int succ_a);
 
     vector<pair<unsigned int , vector<unsigned int> > > compute_a(unsigned int idx,double theta);
     double compute_manipulator_dist(unsigned int idx, int c);
@@ -76,6 +76,7 @@ public:
     bool inside_line_of_door(unsigned int idx, unsigned int door_angle);
 
     vector<pair<unsigned int , vector<unsigned int> > > compute_reachable_door_angles(unsigned int idx, double theta);
+    bool is_door_handle_reachable( unsigned int idx, double curr_ur3_wx, double curr_ur3_wy, unsigned int door_angle);
     bool door_collision_with_robot(vector<pair<double,double> > footprint, double angle);
     bool check_point_in_footprint(double x, double y, vector<pair<double,double> > footprint);
     vector<pair<double,double> > compute_robot_footprint(double curr_wx, double curr_wy, double theta);

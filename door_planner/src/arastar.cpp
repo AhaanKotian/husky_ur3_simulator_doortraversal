@@ -85,7 +85,10 @@ double ARAStar::heuristic(unsigned int idx, double theta, unsigned int a)
     y_ifodh = door.door_handle_point.point.y;
     double x_osod = x_ifodh, y_osod = y_ifodh;// osod: outside sweep of door
     while( sqrt(pow((door.door_hinge_point.point.x - x_osod),2) + pow((door.door_hinge_point.point.y - y_osod),2)) < door.length )
-        x_osod-=0.05;
+    {
+        x_osod-=0.05*cos(theta);
+        y_osod-=0.05*sin(theta);
+    }
     x_osod-= 0.5;
     // firstly find mid point of line joined by door_handle_point and door_hinge_point
     double x_midpt, y_midpt;
@@ -93,7 +96,7 @@ double ARAStar::heuristic(unsigned int idx, double theta, unsigned int a)
     y_midpt = (door.door_handle_point.point.y + door.door_hinge_point.point.y)/2;
     // now find desired point i.e. coordinates of base-link that has crossed over the doorsill.
     double x_cotd , y_cotd; // cotd : crossed over the doorsill
-    x_cotd = x_midpt + 0.5;
+    x_cotd = x_midpt + 0.7;//0.5(husky length from base_link ) + 0.2(some arbitrary threshold to crossover doorsill)
     y_cotd = y_midpt;
     while(ai<=4)
     {
@@ -114,7 +117,7 @@ double ARAStar::heuristic(unsigned int idx, double theta, unsigned int a)
             if(a==2)
                 {d = sqrt(pow((door.door_handle_point.point.x-curr_wx),2) + pow((door.door_handle_point.point.y-curr_wy),2));}
             else
-                {d = sqrt(pow((door.door_handle_point.point.x-x_osod),2) + pow((door.door_handle_point.point.y-y_osod),2));}
+                {d = x_midpt-x_osod;}
         }
         else if(ai==3)
         {
@@ -252,11 +255,292 @@ vector<pair<double,double> > ARAStar::compute_robot_footprint(double curr_wx, do
     return footprint;
 };
 // void ARAStar::compute_reachable_door_angles(int idx)
+// vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_door_angles(unsigned int idx, double theta)
+// {
+//     // pair<unsigned int,unsigned int> reachable_door_angles_range;
+//     // pair<unsigned int , pair<unsigned int,unsigned int> > reachable_door_angles_a;
+//     // vector<pair<unsigned int , pair<unsigned int,unsigned int> > > reachable_door_angles;
+//     vector<unsigned int> reachable_door_angles_i;
+//     pair<unsigned int , vector<unsigned int> > reachable_door_angles_a;
+//     vector<pair<unsigned int , vector<unsigned int> > > reachable_door_angles;
+//     unsigned int mx,my;
+//     costmap->indexToCells(idx,mx,my);
+//     double curr_wx,curr_wy;
+//     costmap->mapToWorld(mx,my,curr_wx,curr_wy);
+
+//     //transformed from base_link's coordinates to ur3_base_link's coordinates
+//     double curr_ur3_wx,curr_ur3_wy;
+//     // if(transform.getOrigin().x()>0.32 && transform.getOrigin().x()<0.34 && transform.getOrigin().y()==0.0)
+//     // {
+//     //     curr_ur3_wx = curr_wx + transform.getOrigin().x();
+//     //     curr_ur3_wy = curr_wy + transform.getOrigin().y();
+//     // }
+//     // else
+//     // {
+//     //     curr_ur3_wx = curr_wx + transform_x;
+//     //     curr_ur3_wy = curr_wy + transform_y;
+//     // }
+//     curr_ur3_wx = curr_wx + transform.getOrigin().x();
+//     curr_ur3_wy = curr_wy + transform.getOrigin().y();
+
+//     double x1, y1, x2, y2;
+//     double d = hypot( (curr_ur3_wx - door.door_hinge_point.point.x) , (curr_ur3_wy - door.door_hinge_point.point.y) );
+//     if(d > reach + door.radius)
+//     {
+//         if(in_first_room(idx))
+//             reachable_door_angles_a.first = 0;
+//         else
+//             reachable_door_angles_a.first = 4;
+//         reachable_door_angles_a.second = reachable_door_angles_i;
+//         reachable_door_angles.push_back(reachable_door_angles_a);
+//         return reachable_door_angles;
+//     }
+//     if(d < abs(reach - door.radius)) // smaller circle completely inside larger circle 
+//     {
+//         if(in_first_room(idx))
+//             reachable_door_angles_a.first = 2;
+//         else
+//             reachable_door_angles_a.first = 3;
+//         reachable_door_angles_a.second = reachable_door_angles_i;
+//         reachable_door_angles.push_back(reachable_door_angles_a);
+//         return reachable_door_angles;
+//     }
+//     double l = ( pow(door.radius,2) - pow(reach,2) + pow(d,2) )/(2 * d) ;
+//     double h = sqrt( pow(door.radius,2) - pow(l,2) );
+//     x1 = (l/d)*(curr_ur3_wx-door.door_hinge_point.point.x) + (h/d)*(curr_ur3_wy-door.door_hinge_point.point.y) + door.door_hinge_point.point.x;
+//     x2 = (l/d)*(curr_ur3_wx-door.door_hinge_point.point.x) - (h/d)*(curr_ur3_wy-door.door_hinge_point.point.y) + door.door_hinge_point.point.x;
+//     y1 = (l/d)*(curr_ur3_wy-door.door_hinge_point.point.y) - (h/d)*(curr_ur3_wx-door.door_hinge_point.point.x) + door.door_hinge_point.point.y;
+//     y2 = (l/d)*(curr_ur3_wy-door.door_hinge_point.point.y) + (h/d)*(curr_ur3_wx-door.door_hinge_point.point.x) + door.door_hinge_point.point.y;
+
+//     ROS_INFO("x1 = (%f/%f)*(%f-%f) + (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wx,door.door_hinge_point.point.x,h,d,curr_ur3_wy,door.door_hinge_point.point.y,door.door_hinge_point.point.x);
+//     ROS_INFO("x2 = (%f/%f)*(%f-%f) - (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wx,door.door_hinge_point.point.x,h,d,curr_ur3_wy,door.door_hinge_point.point.y,door.door_hinge_point.point.x);
+//     ROS_INFO("y1 = (%f/%f)*(%f-%f) - (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wy,door.door_hinge_point.point.y,h,d,curr_ur3_wx,door.door_hinge_point.point.x,door.door_hinge_point.point.y);
+//     ROS_INFO("y2 = (%f/%f)*(%f-%f) + (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wy,door.door_hinge_point.point.y,h,d,curr_ur3_wx,door.door_hinge_point.point.x,door.door_hinge_point.point.y);
+
+//     unsigned int idx_check1,idx_check2;
+//     costmap->worldToMap(x1,y1,mx,my);
+//     idx_check1 = costmap->getIndex(mx,my);
+//     costmap->worldToMap(x2,y2,mx,my);
+//     idx_check2 = costmap->getIndex(mx,my);
+//     if(!in_first_room(idx_check1) && !in_first_room(idx_check2) && !in_first_room(idx))
+//     {
+//         reachable_door_angles_a.first = 4;
+//         reachable_door_angles_a.second = reachable_door_angles_i;
+//         reachable_door_angles.push_back(reachable_door_angles_a);
+//         return reachable_door_angles;
+//     }
+
+//     if(!in_first_room(idx_check1))
+//     {
+//         x1 = door.door_handle_point.point.x;
+//         y1 = door.door_handle_point.point.y;
+//     }
+    
+//     if(!in_first_room(idx_check2))
+//     {
+//         x2 = door.door_handle_point.point.x;
+//         y2 = door.door_handle_point.point.y;
+//     }
+//     double x_small,y_small;//coordinates of smallest reachable door angle
+//     double x_large,y_large;//coordinates of largest reachable door angle
+//     ROS_INFO_STREAM("(x1,y1) = ("<<x1<<","<<y1<<")"<<" & (x2,y2) = ("<<x2<<","<<y2<<") & d = "<<d);
+//     // ROS_INFO_STREAM("atan(x1,y1) = "<<atan((y1-door.door_hinge_point.point.y)/(x1-door.door_hinge_point.point.x))*180/M_PI<<" & atan(x2,y2) = "<<atan((y2-door.door_hinge_point.point.y)/(x2-door.door_hinge_point.point.x))*180/M_PI);
+//     // if( atan((y1-door.door_hinge_point.point.y)/(x1-door.door_hinge_point.point.x))*180/M_PI <= 
+//     //     atan((y2-door.door_hinge_point.point.y)/(x2-door.door_hinge_point.point.x))*180/M_PI )
+//     // {
+//     //     x_small = x1; x_large = x2;
+//     //     y_small = y1; y_large = y2;
+//     // }
+//     // else
+//     // {
+//     //     x_small = x2; x_large = x1;
+//     //     y_small = y2; y_large = y1;
+//     // }
+
+//     // if(atan((y_large-door.door_hinge_point.point.y)/(x_large-door.door_hinge_point.point.x))*180/M_PI > door.max_door_angle_degree)
+//     // {
+//     //     ROS_INFO_STREAM(" Greater than door.max_door_angle_degree ; x_small = "<<x_small<<" & y_small = "<<y_small<<" & x_large = "<<x_large<<" & y_large = "<<y_large);
+//     //     x_large = door.door_hinge_point.point.x + door.length*cos((90+door.max_door_angle_degree)*M_PI/180) ;
+//     //     y_large = door.door_hinge_point.point.y + door.length*sin((90+door.max_door_angle_degree)*M_PI/180) ;
+//     // }
+
+//     // if(atan((y_small-door.door_hinge_point.point.y)/(x_small-door.door_hinge_point.point.x))*180/M_PI < 0)
+//     // {
+//     //     ROS_INFO_STREAM(" Less than 0 degree door angle ; x_small = "<<x_small<<" & y_small = "<<y_small<<" & x_large = "<<x_large<<" & y_large = "<<y_large);
+//     //     x_small = door.door_handle_point.point.x;
+//     //     y_small = door.door_handle_point.point.y;
+//     // }
+//     // ROS_INFO_STREAM("x_small = "<<x_small<<" & y_small = "<<y_small<<" & x_large = "<<x_large<<" & y_large = "<<y_large);
+//     // int srda, lrda;// smallest reachable door angle & largest reachable door angle in degrees
+//     // double d_small = sqrt(pow((door.door_handle_point.point.x-x_small),2) + pow((door.door_handle_point.point.y-y_small),2));
+//     // double d_large = sqrt(pow((door.door_handle_point.point.x-x_large),2) + pow((door.door_handle_point.point.y-y_large),2));
+//     // srda = int(ceil( acos( 1 - ( (pow(d_small,2)) / (2*pow(door.length,2)) ) ) * 180/M_PI ));
+//     // lrda = int(floor(acos( 1 - ( (pow(d_large,2)) / (2*pow(door.length,2)) ) ) * 180/M_PI ));
+//     unsigned int door_angle1, door_angle2;// smallest reachable door angle & largest reachable door angle in degrees
+//     double d1 = sqrt(pow((door.door_handle_point.point.x-x1),2) + pow((door.door_handle_point.point.y-y1),2));
+//     double d2 = sqrt(pow((door.door_handle_point.point.x-x2),2) + pow((door.door_handle_point.point.y-y2),2));
+//     door_angle1 = int(ceil( acos( 1 - ( (pow(d1,2)) / (2*pow(door.radius,2)) ) ) * 180/M_PI ));
+//     door_angle2 = int(floor(acos( 1 - ( (pow(d2,2)) / (2*pow(door.radius,2)) ) ) * 180/M_PI ));
+//     unsigned int smallest_reachable_door_angle, largest_reachable_door_angle;
+//     if(door_angle1 <= door_angle2)
+//     {
+//         smallest_reachable_door_angle = door_angle1;
+//         largest_reachable_door_angle = door_angle2;
+//     }
+//     else
+//     {
+//         smallest_reachable_door_angle = door_angle2;
+//         largest_reachable_door_angle = door_angle1;
+//     }
+//     if(smallest_reachable_door_angle > door.max_door_angle_degree)
+//         smallest_reachable_door_angle = door.max_door_angle_degree;
+//     if(largest_reachable_door_angle > door.max_door_angle_degree)
+//         largest_reachable_door_angle = door.max_door_angle_degree;
+
+//     ROS_INFO_STREAM("For ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") smallest_reachable_door_angle = "<<smallest_reachable_door_angle<<" & largest_reachable_door_angle = "<<largest_reachable_door_angle);
+    
+//     // collision check --->   
+    
+//     vector<pair<double,double> > footprint = compute_robot_footprint(curr_wx,curr_wy,theta);//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
+//     vector<unsigned int> a_1_door_angles,a_2_door_angles,a_3_door_angles;
+//     unsigned int angle;
+//     for(angle=smallest_reachable_door_angle;angle<=largest_reachable_door_angle;angle++)
+//     {
+//         if(door_collision_with_robot(footprint,angle))
+//         {
+//             ROS_INFO_STREAM("door_collision_with_robot() returned true for angle = "<<angle);
+//             continue;
+//         }
+//         if(in_first_room(idx))
+//         {
+//             if(!inside_line_of_door(idx,angle))
+//                 a_1_door_angles.push_back(angle);
+//             else
+//                 a_2_door_angles.push_back(angle);
+//         }
+//         else
+//             a_3_door_angles.push_back(angle);
+//     }
+//     if(a_3_door_angles.size()>0)
+//     {
+//         reachable_door_angles_i = a_3_door_angles;
+//         reachable_door_angles_a.first = 3;
+//         reachable_door_angles_a.second = reachable_door_angles_i;
+//         reachable_door_angles.push_back(reachable_door_angles_a);
+        
+//     }
+//     else
+//     {
+//         if(a_1_door_angles.size()==0 && a_2_door_angles.size()==0)//for faltu edge case
+//         {
+//             if(in_first_room(idx))
+//                 reachable_door_angles_a.first = 0;
+//             else
+//                 reachable_door_angles_a.first = 4;
+//             reachable_door_angles_a.second = reachable_door_angles_i;
+//             reachable_door_angles.push_back(reachable_door_angles_a);
+//         }
+//         else if(a_1_door_angles.size()==0)
+//         {
+//             reachable_door_angles_i = a_2_door_angles;
+//             reachable_door_angles_a.first = 2;
+//             reachable_door_angles_a.second = reachable_door_angles_i;
+//             reachable_door_angles.push_back(reachable_door_angles_a);
+            
+//         }
+//         else if(a_2_door_angles.size()==0)
+//         {
+//             reachable_door_angles_i = a_1_door_angles;
+//             reachable_door_angles_a.first = 1;
+//             reachable_door_angles_a.second = reachable_door_angles_i;
+//             reachable_door_angles.push_back(reachable_door_angles_a);
+            
+//         }
+//         else
+//         {
+//             reachable_door_angles_i = a_1_door_angles;
+//             reachable_door_angles_a.first = 1;
+//             reachable_door_angles_a.second = reachable_door_angles_i;
+//             reachable_door_angles.push_back(reachable_door_angles_a);
+
+//             reachable_door_angles_i = a_2_door_angles;
+//             reachable_door_angles_a.first = 2;
+//             reachable_door_angles_a.second = reachable_door_angles_i;
+//             reachable_door_angles.push_back(reachable_door_angles_a);
+            
+//         }
+//     }
+//     for(pair<unsigned int , vector<unsigned int> > i:reachable_door_angles)
+//     {
+//         ROS_INFO_STREAM("For Current ur3 pose : ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") ; a = "<<i.first<<" & rda_range = [");
+//         for(unsigned int i_rda:i.second)
+//             ROS_INFO_STREAM(i_rda);
+//     }
+//     ROS_INFO_STREAM("]");
+//     return reachable_door_angles;
+
+//     // unsigned int a = compute_a(idx);
+//     // if(a==1)
+//     // {
+//     //     unsigned int angle;
+//     //     for(angle=smallest_reachable_door_angle;angle<=largest_reachable_door_angle;angle++)
+//     //     {
+//     //         ROS_INFO_STREAM("a==1 case");
+//     //         if(door_collision_with_robot(footprint,angle))
+//     //         {
+//     //             ROS_INFO_STREAM("largest_reachable_door_angle = "<<angle<<" from "<<largest_reachable_door_angle);
+//     //             largest_reachable_door_angle = angle-1;
+//     //             break;
+//     //         }
+//     //     }
+//     // }
+//     // else if(a==2 || a==3)
+//     // {
+//     //     unsigned int angle;
+//     //     for(angle=largest_reachable_door_angle;angle>=smallest_reachable_door_angle && angle<=largest_reachable_door_angle;angle--)
+//     //     {
+//     //         // ROS_INFO_STREAM("x = "<<door.door_hinge_point.point.x<<" + "<<door.length<<" * "<<cos((90+angle)*M_PI/180));
+//     //         // ROS_INFO_STREAM("y = "<<door.door_hinge_point.point.y<<" + "<<door.length<<" * "<<sin((90+angle)*M_PI/180));
+//     //         // ROS_INFO_STREAM("x = "<<x<<" & y = "<<y<<" for angle = "<<angle);
+//     //         ROS_INFO_STREAM("a==2 || a==3 case");
+//     //         if(door_collision_with_robot(footprint,angle))
+//     //         {
+//     //             ROS_INFO_STREAM("smallest_reachable_door_angle = "<<angle<<" from "<<smallest_reachable_door_angle);
+//     //             smallest_reachable_door_angle = angle+1;
+//     //             break;
+//     //         }
+//     //     }
+//     // }
+
+    
+//     // reachable_door_angles.first = smallest_reachable_door_angle;
+//     // reachable_door_angles.second = largest_reachable_door_angle;
+//     // ROS_INFO_STREAM("reachable_door_angles.first = "<<reachable_door_angles.first<<" & reachable_door_angles.second = "<<reachable_door_angles.second);
+//     // return reachable_door_angles;
+
+// };
+bool ARAStar::is_door_handle_reachable( unsigned int idx, double curr_ur3_wx, double curr_ur3_wy, unsigned int door_angle)
+{
+    double x_door_handle,y_door_handle;
+    x_door_handle = door.door_hinge_point.point.x + (door.radius) * cos((90+door_angle)*M_PI/180);
+    y_door_handle = door.door_hinge_point.point.y + (door.radius) * sin((90+door_angle)*M_PI/180);
+    double d = hypot( (x_door_handle - curr_ur3_wx), (y_door_handle - curr_ur3_wy) );
+    if(d > (reach-0.1) ) //0.1 for accounting for reachability in max joint limits 
+        return false;
+    else 
+    {
+        if(!in_first_room(idx))
+        {
+            double door_hinge_slope =  (atan((curr_ur3_wy-door.door_hinge_point.point.y)/(curr_ur3_wx-door.door_hinge_point.point.x))*180/M_PI)+90;
+            double door_handle_slope =  (atan((curr_ur3_wy-y_door_handle)/(curr_ur3_wx-x_door_handle))*180/M_PI)+90;
+            if(door_handle_slope >= door_hinge_slope)
+                return false;
+        }
+        return true;
+    }
+};
 vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_door_angles(unsigned int idx, double theta)
 {
-    // pair<unsigned int,unsigned int> reachable_door_angles_range;
-    // pair<unsigned int , pair<unsigned int,unsigned int> > reachable_door_angles_a;
-    // vector<pair<unsigned int , pair<unsigned int,unsigned int> > > reachable_door_angles;
     vector<unsigned int> reachable_door_angles_i;
     pair<unsigned int , vector<unsigned int> > reachable_door_angles_a;
     vector<pair<unsigned int , vector<unsigned int> > > reachable_door_angles;
@@ -267,20 +551,9 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
 
     //transformed from base_link's coordinates to ur3_base_link's coordinates
     double curr_ur3_wx,curr_ur3_wy;
-    // if(transform.getOrigin().x()>0.32 && transform.getOrigin().x()<0.34 && transform.getOrigin().y()==0.0)
-    // {
-    //     curr_ur3_wx = curr_wx + transform.getOrigin().x();
-    //     curr_ur3_wy = curr_wy + transform.getOrigin().y();
-    // }
-    // else
-    // {
-    //     curr_ur3_wx = curr_wx + transform_x;
-    //     curr_ur3_wy = curr_wy + transform_y;
-    // }
     curr_ur3_wx = curr_wx + transform.getOrigin().x();
     curr_ur3_wy = curr_wy + transform.getOrigin().y();
 
-    double x1, y1, x2, y2;
     double d = hypot( (curr_ur3_wx - door.door_hinge_point.point.x) , (curr_ur3_wy - door.door_hinge_point.point.y) );
     if(d > reach + door.radius)
     {
@@ -292,120 +565,19 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
         reachable_door_angles.push_back(reachable_door_angles_a);
         return reachable_door_angles;
     }
-    if(d < abs(reach - door.radius)) // smaller circle completely inside larger circle 
-    {
-        if(in_first_room(idx))
-            reachable_door_angles_a.first = 2;
-        else
-            reachable_door_angles_a.first = 3;
-        reachable_door_angles_a.second = reachable_door_angles_i;
-        reachable_door_angles.push_back(reachable_door_angles_a);
-        return reachable_door_angles;
-    }
-    double l = ( pow(door.radius,2) - pow(reach,2) + pow(d,2) )/(2 * d) ;
-    double h = sqrt( pow(door.radius,2) - pow(l,2) );
-    x1 = (l/d)*(curr_ur3_wx-door.door_hinge_point.point.x) + (h/d)*(curr_ur3_wy-door.door_hinge_point.point.y) + door.door_hinge_point.point.x;
-    x2 = (l/d)*(curr_ur3_wx-door.door_hinge_point.point.x) - (h/d)*(curr_ur3_wy-door.door_hinge_point.point.y) + door.door_hinge_point.point.x;
-    y1 = (l/d)*(curr_ur3_wy-door.door_hinge_point.point.y) - (h/d)*(curr_ur3_wx-door.door_hinge_point.point.x) + door.door_hinge_point.point.y;
-    y2 = (l/d)*(curr_ur3_wy-door.door_hinge_point.point.y) + (h/d)*(curr_ur3_wx-door.door_hinge_point.point.x) + door.door_hinge_point.point.y;
 
-    ROS_INFO("x1 = (%f/%f)*(%f-%f) + (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wx,door.door_hinge_point.point.x,h,d,curr_ur3_wy,door.door_hinge_point.point.y,door.door_hinge_point.point.x);
-    ROS_INFO("x2 = (%f/%f)*(%f-%f) - (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wx,door.door_hinge_point.point.x,h,d,curr_ur3_wy,door.door_hinge_point.point.y,door.door_hinge_point.point.x);
-    ROS_INFO("y1 = (%f/%f)*(%f-%f) - (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wy,door.door_hinge_point.point.y,h,d,curr_ur3_wx,door.door_hinge_point.point.x,door.door_hinge_point.point.y);
-    ROS_INFO("y2 = (%f/%f)*(%f-%f) + (%f/%f)*(%f-%f) + %f",l,d,curr_ur3_wy,door.door_hinge_point.point.y,h,d,curr_ur3_wx,door.door_hinge_point.point.x,door.door_hinge_point.point.y);
-
-    unsigned int idx_check1,idx_check2;
-    costmap->worldToMap(x1,y1,mx,my);
-    idx_check1 = costmap->getIndex(mx,my);
-    costmap->worldToMap(x2,y2,mx,my);
-    idx_check2 = costmap->getIndex(mx,my);
-    if(!in_first_room(idx_check1) && !in_first_room(idx_check2) && !in_first_room(idx))
-    {
-        reachable_door_angles_a.first = 4;
-        reachable_door_angles_a.second = reachable_door_angles_i;
-        reachable_door_angles.push_back(reachable_door_angles_a);
-        return reachable_door_angles;
-    }
-
-    if(!in_first_room(idx_check1))
-    {
-        x1 = door.door_handle_point.point.x;
-        y1 = door.door_handle_point.point.y;
-    }
-    
-    if(!in_first_room(idx_check2))
-    {
-        x2 = door.door_handle_point.point.x;
-        y2 = door.door_handle_point.point.y;
-    }
-    double x_small,y_small;//coordinates of smallest reachable door angle
-    double x_large,y_large;//coordinates of largest reachable door angle
-    ROS_INFO_STREAM("(x1,y1) = ("<<x1<<","<<y1<<")"<<" & (x2,y2) = ("<<x2<<","<<y2<<") & d = "<<d);
-    // ROS_INFO_STREAM("atan(x1,y1) = "<<atan((y1-door.door_hinge_point.point.y)/(x1-door.door_hinge_point.point.x))*180/M_PI<<" & atan(x2,y2) = "<<atan((y2-door.door_hinge_point.point.y)/(x2-door.door_hinge_point.point.x))*180/M_PI);
-    // if( atan((y1-door.door_hinge_point.point.y)/(x1-door.door_hinge_point.point.x))*180/M_PI <= 
-    //     atan((y2-door.door_hinge_point.point.y)/(x2-door.door_hinge_point.point.x))*180/M_PI )
-    // {
-    //     x_small = x1; x_large = x2;
-    //     y_small = y1; y_large = y2;
-    // }
-    // else
-    // {
-    //     x_small = x2; x_large = x1;
-    //     y_small = y2; y_large = y1;
-    // }
-
-    // if(atan((y_large-door.door_hinge_point.point.y)/(x_large-door.door_hinge_point.point.x))*180/M_PI > door.max_door_angle_degree)
-    // {
-    //     ROS_INFO_STREAM(" Greater than door.max_door_angle_degree ; x_small = "<<x_small<<" & y_small = "<<y_small<<" & x_large = "<<x_large<<" & y_large = "<<y_large);
-    //     x_large = door.door_hinge_point.point.x + door.length*cos((90+door.max_door_angle_degree)*M_PI/180) ;
-    //     y_large = door.door_hinge_point.point.y + door.length*sin((90+door.max_door_angle_degree)*M_PI/180) ;
-    // }
-
-    // if(atan((y_small-door.door_hinge_point.point.y)/(x_small-door.door_hinge_point.point.x))*180/M_PI < 0)
-    // {
-    //     ROS_INFO_STREAM(" Less than 0 degree door angle ; x_small = "<<x_small<<" & y_small = "<<y_small<<" & x_large = "<<x_large<<" & y_large = "<<y_large);
-    //     x_small = door.door_handle_point.point.x;
-    //     y_small = door.door_handle_point.point.y;
-    // }
-    // ROS_INFO_STREAM("x_small = "<<x_small<<" & y_small = "<<y_small<<" & x_large = "<<x_large<<" & y_large = "<<y_large);
-    // int srda, lrda;// smallest reachable door angle & largest reachable door angle in degrees
-    // double d_small = sqrt(pow((door.door_handle_point.point.x-x_small),2) + pow((door.door_handle_point.point.y-y_small),2));
-    // double d_large = sqrt(pow((door.door_handle_point.point.x-x_large),2) + pow((door.door_handle_point.point.y-y_large),2));
-    // srda = int(ceil( acos( 1 - ( (pow(d_small,2)) / (2*pow(door.length,2)) ) ) * 180/M_PI ));
-    // lrda = int(floor(acos( 1 - ( (pow(d_large,2)) / (2*pow(door.length,2)) ) ) * 180/M_PI ));
-    unsigned int door_angle1, door_angle2;// smallest reachable door angle & largest reachable door angle in degrees
-    double d1 = sqrt(pow((door.door_handle_point.point.x-x1),2) + pow((door.door_handle_point.point.y-y1),2));
-    double d2 = sqrt(pow((door.door_handle_point.point.x-x2),2) + pow((door.door_handle_point.point.y-y2),2));
-    door_angle1 = int(ceil( acos( 1 - ( (pow(d1,2)) / (2*pow(door.radius,2)) ) ) * 180/M_PI ));
-    door_angle2 = int(floor(acos( 1 - ( (pow(d2,2)) / (2*pow(door.radius,2)) ) ) * 180/M_PI ));
-    unsigned int smallest_reachable_door_angle, largest_reachable_door_angle;
-    if(door_angle1 <= door_angle2)
-    {
-        smallest_reachable_door_angle = door_angle1;
-        largest_reachable_door_angle = door_angle2;
-    }
-    else
-    {
-        smallest_reachable_door_angle = door_angle2;
-        largest_reachable_door_angle = door_angle1;
-    }
-    if(smallest_reachable_door_angle > door.max_door_angle_degree)
-        smallest_reachable_door_angle = door.max_door_angle_degree;
-    if(largest_reachable_door_angle > door.max_door_angle_degree)
-        largest_reachable_door_angle = door.max_door_angle_degree;
-
-    ROS_INFO_STREAM("For ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") smallest_reachable_door_angle = "<<smallest_reachable_door_angle<<" & largest_reachable_door_angle = "<<largest_reachable_door_angle);
-    
-    // collision check --->   
-    
     vector<pair<double,double> > footprint = compute_robot_footprint(curr_wx,curr_wy,theta);//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
     vector<unsigned int> a_1_door_angles,a_2_door_angles,a_3_door_angles;
     unsigned int angle;
-    for(angle=smallest_reachable_door_angle;angle<=largest_reachable_door_angle;angle++)
+    
+    for(angle=0;angle<=door.max_door_angle_degree;angle++)
     {
+        if(!is_door_handle_reachable(idx,curr_ur3_wx,curr_ur3_wy,angle))
+            continue;
+
         if(door_collision_with_robot(footprint,angle))
         {
-            ROS_INFO_STREAM("door_collision_with_robot() returned true for angle = "<<angle);
+            //ROS_INFO_STREAM("door_collision_with_robot() returned true for angle = "<<angle);
             continue;
         }
         if(in_first_room(idx))
@@ -467,54 +639,14 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
             
         }
     }
-    for(pair<unsigned int , vector<unsigned int> > i:reachable_door_angles)
-    {
-        ROS_INFO_STREAM("For Current ur3 pose : ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") ; a = "<<i.first<<" & rda_range = [");
-        for(unsigned int i_rda:i.second)
-            ROS_INFO_STREAM(i_rda);
-    }
-    ROS_INFO_STREAM("]");
+    // for(pair<unsigned int , vector<unsigned int> > i:reachable_door_angles)
+    // {
+    //     ROS_INFO_STREAM("For Current ur3 pose : ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") ; a = "<<i.first<<" & rda_range = [");
+    //     for(unsigned int i_rda:i.second)
+    //         ROS_INFO_STREAM(i_rda);
+    // }
+    // ROS_INFO_STREAM("]");
     return reachable_door_angles;
-
-    // unsigned int a = compute_a(idx);
-    // if(a==1)
-    // {
-    //     unsigned int angle;
-    //     for(angle=smallest_reachable_door_angle;angle<=largest_reachable_door_angle;angle++)
-    //     {
-    //         ROS_INFO_STREAM("a==1 case");
-    //         if(door_collision_with_robot(footprint,angle))
-    //         {
-    //             ROS_INFO_STREAM("largest_reachable_door_angle = "<<angle<<" from "<<largest_reachable_door_angle);
-    //             largest_reachable_door_angle = angle-1;
-    //             break;
-    //         }
-    //     }
-    // }
-    // else if(a==2 || a==3)
-    // {
-    //     unsigned int angle;
-    //     for(angle=largest_reachable_door_angle;angle>=smallest_reachable_door_angle && angle<=largest_reachable_door_angle;angle--)
-    //     {
-    //         // ROS_INFO_STREAM("x = "<<door.door_hinge_point.point.x<<" + "<<door.length<<" * "<<cos((90+angle)*M_PI/180));
-    //         // ROS_INFO_STREAM("y = "<<door.door_hinge_point.point.y<<" + "<<door.length<<" * "<<sin((90+angle)*M_PI/180));
-    //         // ROS_INFO_STREAM("x = "<<x<<" & y = "<<y<<" for angle = "<<angle);
-    //         ROS_INFO_STREAM("a==2 || a==3 case");
-    //         if(door_collision_with_robot(footprint,angle))
-    //         {
-    //             ROS_INFO_STREAM("smallest_reachable_door_angle = "<<angle<<" from "<<smallest_reachable_door_angle);
-    //             smallest_reachable_door_angle = angle+1;
-    //             break;
-    //         }
-    //     }
-    // }
-
-    
-    // reachable_door_angles.first = smallest_reachable_door_angle;
-    // reachable_door_angles.second = largest_reachable_door_angle;
-    // ROS_INFO_STREAM("reachable_door_angles.first = "<<reachable_door_angles.first<<" & reachable_door_angles.second = "<<reachable_door_angles.second);
-    // return reachable_door_angles;
-
 };
 double ARAStar::compute_heading_angle(unsigned int s1_idx, unsigned int s2_idx)//computed heading angle as atan(slope of line joining s1_idx & pred[s1_idx])
 {
@@ -535,11 +667,11 @@ double ARAStar::compute_heading_angle(unsigned int s1_idx, unsigned int s2_idx)/
 
     return atan((curr_wy-pred_wy)/(curr_wx-pred_wx));
 }
-bool ARAStar::is_action_feasible(State s,unsigned int succ_idx,vector<unsigned int> succ_rda)
+bool ARAStar::is_action_feasible(State s,unsigned int succ_idx,vector<unsigned int> succ_rda,unsigned int succ_a)
 {
+    // retrieving reachable door angles set of State s --->
     vector<pair<unsigned int , vector<unsigned int> > > s_idx_rda = compute_reachable_door_angles(s.idx,compute_heading_angle(s.idx,succ_idx));
     vector<unsigned int> s_rda;//reachable door angles from state s
-    //pair<unsigned int,unsigned int> succ_rda ---> reachable door angles from state succ
     for(pair<unsigned int , vector<unsigned int> > s_idx_a_rda:s_idx_rda)
     {
         if(s_idx_a_rda.first == s.a)
@@ -548,10 +680,38 @@ bool ARAStar::is_action_feasible(State s,unsigned int succ_idx,vector<unsigned i
             break;
         }
     }
+
+    //main action feasibility check --->
+    // if( (s.a == 0 && succ_a == 0) || (s.a == 4 && succ_a == 4) )
+    // {
+    //     return true;
+    // }
+    // else if( (s.a == 0 && succ_a == 1) )
+    // {
+    //     if( (succ_rda[0] == 0) )
+    //         return true;
+    // }
+    // else if( (s.a == 3 && succ_a == 4) )
+    // {
+    //     if( (s_rda[0] == 0) )
+    //         return true;
+    // }
+    // else if( (s.a >= 1 && s.a <= 3) && (succ_a >= 1 && succ_a <= 3) )
+    // {
+    //     for(unsigned int s_i:s_rda)
+    //     {
+    //         if(find(succ_rda.begin(),succ_rda.end(),s_i)!=succ_rda.end())
+    //         {
+    //             return true;
+    //         }
+    //     }
+    // }
     for(unsigned int s_i:s_rda)
     {
         if(find(succ_rda.begin(),succ_rda.end(),s_i)!=succ_rda.end())
+        {
             return true;
+        }
     }
     return false;
 };
@@ -781,7 +941,7 @@ bool ARAStar::is_occupied(unsigned int succ_idx, unsigned int s_idx)
     // ROS_INFO_STREAM("]");
     vector<costmap_2d::MapLocation> footprint_cells;
     costmap->convexFillCells(footprint_mx_my,footprint_cells);
-    ROS_INFO_STREAM("footprint_cells.size() = "<<footprint_cells.size());
+    //ROS_INFO_STREAM("footprint_cells.size() = "<<footprint_cells.size());
     //ROS_INFO_STREAM("footprint_cells = [");
     for(costmap_2d::MapLocation map_cell:footprint_cells)
     {
@@ -789,7 +949,7 @@ bool ARAStar::is_occupied(unsigned int succ_idx, unsigned int s_idx)
         //ROS_INFO_STREAM(idx);
         if(map_[idx]>128)
         {
-            ROS_INFO_STREAM("Returning true for idx = "<<idx);
+            //ROS_INFO_STREAM("Returning true for idx = "<<idx);
             return true;
         }
     }
@@ -864,7 +1024,7 @@ void ARAStar::improvePath()
     {
         s = *(open.begin()); open.erase(*(open.begin()));
         // ROS_INFO_STREAM(" State s.idx = "<<s.idx<<" & goal.idx = "<<goal.idx<<" & fvalue(s) = "<<fvalue(s)<<" & fvalue(goal) = "<<fvalue(goal)<< " & epsilon = "<<epsilon<<" open.size() = "<<open.size());
-        ROS_INFO_STREAM("State s.idx = "<<s.idx<<" ; in_first_room(s.idx) = "<<in_first_room(s.idx)<<" & s.a = "<<s.a<<" & k = "<<k++<<" at ros::Time::now().toSec() = "<< ros::Time::now().toSec()<<" & open.size() = "<<open.size());
+        ROS_INFO_STREAM("State s.idx = "<<s.idx<<" ; s.g = "<<s.g<<" ; s.h = "<<s.h<<" & s.a = "<<s.a<<" & k = "<<k++<<" at ros::Time::now().toSec() = "<< ros::Time::now().toSec()<<" & open.size() = "<<open.size());
         closed.insert(s);
         vector<unsigned int> successors;
         //ROS_INFO_STREAM(" PRE COMPUTE_SUCCESSORS_IDX_SET() = "<< ros::Time::now().toSec());
@@ -881,19 +1041,23 @@ void ARAStar::improvePath()
             for(pair<unsigned int , vector<unsigned int> > successor_a : succ_a)
             {
                 if(successor_a.second.size()>0)
-                    ROS_INFO_STREAM("{"<<successor_a.first<<", {"<<successor_a.second[0]<<" , "<<successor_a.second[successor_a.second.size()-1]<<" and size = "<<successor_a.second.size()<<"} }");
-                if( (s.a>=1 && s.a<=3) && (successor_a.first >= 1 && successor_a.first <=3) )//(s.a>=1 && s.a<=3) && 
-                {//ROS_INFO_STREAM(" PRE IS_ACTION_FEASIBLE() = "<< ros::Time::now().toSec());
-                    if(!is_action_feasible(s,succ_idx,successor_a.second))
+                    ROS_INFO_STREAM("For succ_idx = "<<succ_idx<<" ; {"<<successor_a.first<<", {"<<successor_a.second[0]<<" , "<<successor_a.second[successor_a.second.size()-1]<<" and size = "<<successor_a.second.size()<<"} }");
+                if( (s.a>=1 && s.a<=3) && ( successor_a.first >= 1 && successor_a.first <=3) )//(s.a>=1 && s.a<=3) && 
+                {
+                    if(!is_action_feasible(s,succ_idx,successor_a.second,successor_a.first))
                     {
                         ROS_INFO_STREAM("ACTION NOT FEASIBLE FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
                         continue;
                     }
                     ROS_INFO_STREAM("ACTION IS FEASIBLE!!! FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
-                    //compute_reachable_door_angles(succ_idx);
                 }
-                //ROS_INFO_STREAM("succ_idx = "<<succ_idx);
-                //ROS_INFO_STREAM("visited[succ_idx] = "<<visited[succ_idx]);
+                // if(!is_action_feasible(s,succ_idx,successor_a.second,successor_a.first))
+                // {
+                //     ROS_INFO_STREAM("ACTION NOT FEASIBLE FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
+                //     continue;
+                // }
+                // ROS_INFO_STREAM("ACTION IS FEASIBLE!!! FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
+                
                 if(visited[succ_idx]==NULL)
                 {
                     //ROS_INFO_STREAM(" PRE HEURISTIC() = "<< ros::Time::now().toSec());
@@ -990,17 +1154,17 @@ vector<geometry_msgs::PoseStamped> ARAStar::search()
     unsigned int i=1;
     //delete dynamically allocated memory in visited
     //for(i=0;i<visited.size();i++)
-    for(auto it=visited.begin();it!=visited.end();it++)
-    {
-        ROS_INFO_STREAM("it->first = "<<it->first<<" ; i = "<<i++<<" ; it->second = "<<it->second);
-        //ROS_INFO_STREAM("(visited[i])->idx = "<<(visited[i])->idx<<" & i = "<<i);
-        //ROS_INFO_STREAM("i = "<<i);
-        // delete visited[i];
-        // visited[i]=NULL;
-        // delete it;
-        delete it->second;
-        it->second = NULL;
-    }
+    // for(auto it=visited.begin();it!=visited.end();it++)
+    // {
+    //     ROS_INFO_STREAM("it->first = "<<it->first<<" ; i = "<<i++<<" ; it->second = "<<it->second);
+    //     //ROS_INFO_STREAM("(visited[i])->idx = "<<(visited[i])->idx<<" & i = "<<i);
+    //     //ROS_INFO_STREAM("i = "<<i);
+    //     // delete visited[i];
+    //     // visited[i]=NULL;
+    //     // delete it;
+    //     delete it->second;
+    //     it->second = NULL;
+    // }
     //return compute_idx_path();
     return plan;
 };
