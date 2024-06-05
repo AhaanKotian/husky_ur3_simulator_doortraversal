@@ -1,9 +1,25 @@
 Run these commands in terminal to run to husky_ur3_simulator_doortraversal for door traversal task:
-1. roslaunch husky_ur3_gazebo husky_empty_world.launch world_name:=/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/worlds/door_traversal_world.world
+1. roslaunch husky_ur3_gazebo husky_ur3_door_travsersal_world.launch
 
 2. roslaunch husky_ur3_gripper_moveit_config Omni_control.launch 
 
-3. roslaunch husky_ur3_navigation husky_ur3_amcl.launch map_file:=/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/maps/door_traversal_world.yaml
+3. roslaunch husky_ur3_navigation husky_ur3_amcl.launch map_file:=/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/maps/door_traversal_v2_0_1.yaml
 
 
 
+SLAM using Turtlebot3 (physical): 24/05/24
+1. Physical World image stored on phone
+2. ip of turtlebot 8 (tb8) = 192.168.0.33
+3. netplan doc is now correct [dhcp4 = no rehna chahiye , addresses and stuff before dhcp6 should NOT be commented(addresses = 192.168.0.33/24 se hi toh ip static huay]
+4. ssh ubuntu@192.168.0.x, in our case x=33. --> this is the command for ssh
+5. Baaki robotis turtlebot3 noetic pe mil jaayega commands
+6. NOTE: rpi ke ~/.bashrc mein namespace=tb3_8 hatao, varna topic mein /cmd_vel pe publish nhi hoga /tb3_8/cmd_vel pe publish hoga.
+
+
+Used Vicon for crazyflies hover with Rugved Katole : 25/05/24
+1. We select objects by holding 'ctrl' and selecting the beads in 3D Perspective view
+2. The app is Vicon Tracker
+3. Did calibration using wand : pie chart on each camera shows if that camera is calibrated or not.
+4. The cameras emit IR waves and the wwaves reflected from the grey beads. Even metal surfaces reflect IR waves so if any metal is in the vicon workspace it might cause error. Now this can be removed using mask.
+5. To create new objects, first we'll have to untrack older objects
+6. 

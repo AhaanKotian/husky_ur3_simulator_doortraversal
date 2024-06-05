@@ -87,6 +87,12 @@ namespace door_global_planner
         ROS_INFO_STREAM(" start idx = "<<start_idx_oned);
         ROS_INFO_STREAM(" goal idx = "<<goal_idx_oned);
 
+        costmap_->indexToCells(start_idx_oned,mx,my);
+        costmap_->mapToWorld(mx,my,start_wx,start_wy);
+        costmap_->indexToCells(goal_idx_oned,mx,my);
+        costmap_->mapToWorld(mx,my,goal_wx,goal_wy);
+        ROS_INFO_STREAM("(start_wx,start_wy) = ("<<start_wx<<","<<start_wy<<") & (goal_wx,goal_wy)  = ("<<goal_wx<<","<<goal_wy<<")");
+
         //std::vector<Node> path;
          
         int destination = goal_idx_oned;

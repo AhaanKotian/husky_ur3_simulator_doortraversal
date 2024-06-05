@@ -19,6 +19,9 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <std_msgs/ColorRGBA.h>
+#include <std_msgs/Header.h>
+#include <visualization_msgs/Marker.h>
 #include "state.h"
 #include "Door.h"
 
@@ -39,10 +42,13 @@ public:
     set<State,comp> closed;
     State start,goal;
     State* succ;
-    map<unsigned int,State*> visited;
-    // vector<State*> visited;
-    map<unsigned int,unsigned int> pred;
-    map<unsigned int,unsigned int> idx_to_door_angle;
+    // map<unsigned int,State*> visited;
+    // map<unsigned int,unsigned int> pred;
+    // map<unsigned int,unsigned int> idx_to_door_angle;
+    // vector<unsigned int> door_angle_path;
+    map< pair<unsigned int,unsigned int> , State* > visited;
+    map< pair<unsigned int,unsigned int> , pair<unsigned int,unsigned int> > pred;
+    map< pair<unsigned int,unsigned int> , unsigned int > idx_to_door_angle;
     vector<unsigned int> door_angle_path;
     std::unique_ptr<ros::NodeHandle> rosNode;
     ros::Publisher robot_door_handle_path_pub;
@@ -55,13 +61,19 @@ public:
     tf::TransformListener listener;
     tf::StampedTransform transform;double transform_x,transform_y;
     double reach;
+
+    //for visualisation
+    visualization_msgs::Marker tree;
+    visualization_msgs::Marker poly;
+    ros::Publisher tree_pub;
+    ros::Publisher poly_pub;
     
     ARAStar();
     ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* costmap_, double epsilon);
     
     vector<unsigned int> compute_successors_idx_set(State s);
     vector<unsigned int> compute_idx_path();
-    unsigned int fvalue(State s);
+    double fvalue(State s);
     void improvePath();
     vector<geometry_msgs::PoseStamped> search();
     double heuristic(unsigned int idx,double theta,unsigned int a);
@@ -83,7 +95,10 @@ public:
     void compute_cartesian_door_handle_path();
     
     double compute_heading_angle(unsigned int s1_idx, unsigned int s2_idx);
-    
+
+    //FOR VISUALISATION AND DEBUGGING
+    void init_line(visualization_msgs::Marker* line_msg);
+    void pub_line(visualization_msgs::Marker* line_msg, ros::Publisher* line_pub, double x1, double y1, double x2, double y2,bool b);
 };
 
 

@@ -30,9 +30,9 @@ rospy.init_node('door_opening_s2', anonymous=True)
 robot = RobotCommander()
 scene = PlanningSceneInterface()
 
-ik_solver = IK("ur3_base_link","gripper_link")
+ik_solver = IK("ur3_base_link","ee_link")
 seed_state = [0.0] * ik_solver.number_of_joints
-
+goal_state = [0.0] * ik_solver.number_of_joints
 
 
 ##모바일 파트 관련 변수
@@ -53,142 +53,44 @@ listener = tf.TransformListener()
 
 
 msg = rospy.wait_for_message("/door_planner/door_handle_path", Message, timeout=2000)
-waypoints = []
+i=0
+joint_waypoints = []
 for pose_i in msg.door_handle_pose.poses:
-
-    while not rospy.is_shutdown():
-        try:
-            (trans,rot) = listener.lookupTransform('/map', '/ur3_base_link', rospy.Time(0))
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            continue
+    if pose_i.pose.position.y < -0.90:
+        continue
+    
+    listener.waitForTransform("/map","ur3_base_link",rospy.Time.now(),rospy.Duration(10.0))
     door_handle_pose_transformed = listener.transformPose("ur3_base_link",pose_i)
     
-    ik_solver.get_ik(seed_state,
-                door_handle_pose_transformed.pose.position.x, door_handle_pose_transformed.pose.position.y, door_handle_pose_transformed.pose.position.z,
-                door_handle_pose_transformed.pose.orientation.x, door_handle_pose_transformed.pose.orientation.y, door_handle_pose_transformed.pose.orientation.z, door_handle_pose_transformed.pose.orientation.w)
-    
-    waypoints.append(copy.deepcopy(pose_i.pose))
+    # goal_state = ik_solver.get_ik(seed_state,
+    #             door_handle_pose_transformed.pose.position.x, door_handle_pose_transformed.pose.position.y, door_handle_pose_transformed.pose.position.z,
+    #             door_handle_pose_transformed.pose.orientation.x, door_handle_pose_transformed.pose.orientation.y, door_handle_pose_transformed.pose.orientation.z, door_handle_pose_transformed.pose.orientation.w)
+    print("msg.robot_pose.poses[i] = ",[msg.robot_pose.poses[i].pose.position.x,msg.robot_pose.poses[i].pose.position.y])
+    print("door_handle_pose_transformed = ",[door_handle_pose_transformed.pose.position.x,door_handle_pose_transformed.pose.position.y])
+    joint_waypoints.append([msg.robot_pose.poses[i],door_handle_pose_transformed])
+    i = i+1
 
-
-# We want the Cartesian path to be interpolated at a resolution of 1 cm
-# which is why we will specify 0.01 as the eef_step in Cartesian
-# translation.  We will disable the jump threshold by setting it to 0.0 disabling:
-(plan, fraction) = move_group.compute_cartesian_path(
-                                    waypoints,   # waypoints to follow
-                                    0.1,        # eef_step
-                                    0.0)         # jump_threshold
-
-#displaying plan
-# display_trajectory = moveit_msgs.msg.DisplayTrajectory()
-# display_trajectory.trajectory_start = robot.get_current_pose()
-# display_trajectory.trajectory.append(plan)
-# display_trajectory_publisher.publish(display_trajectory)
-
-move_group.execute(plan,wait=True)
-# pub = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
-
-# speed = Twist()
-
-# r = rospy.Rate(4)
 def amcl_pose_callback(msg) :
-    p
+    # (x,y) = (msg.pose.pose.position.x,msg.pose.pose.position.y)
+    print("In amcl_pose_callback()")
+    # for i in joint_waypoints:
+    #     if(math.dist([i[0].pose.position.x,i[0].pose.position.y,i[0].pose.position.z],[msg.pose.pose.position.x,msg.pose.pose.position.y,msg.pose.pose.position.z]) <= 0.1 ) :
+    #         print("i[1] = ",i[1])
+    #         move_group.go(i[1],wait=True)
+    k=0
+    for i in joint_waypoints:
+        if(math.dist([i[0].pose.position.x,i[0].pose.position.y,i[0].pose.position.z],[msg.pose.pose.position.x,msg.pose.pose.position.y,msg.pose.pose.position.z]) <= 0.1 ) :
+            
+            goal_state = ik_solver.get_ik(seed_state,
+                i[1].pose.position.x, i[1].pose.position.y, i[1].pose.position.z,
+                i[1].pose.orientation.x, i[1].pose.orientation.y, i[1].pose.orientation.z, i[1].pose.orientation.w)
+            print("goal_state",goal_state)
+            move_group.go(goal_state,wait=True)
 
-sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, amcl_pose_callback)
-
-
-# ## 매니퓰레이터 변수 선언
-
-
-
-
-
-
-
-
-
-
-# #통합제어
-
-# joint_goal = move_group.get_current_joint_values()
-
-
-# #변수 선언
-# mobile_joints = [-pi/3, 0.5]
-# joint_goal_list = [pi*90/180, pi*-130/180 , pi*111/180, pi*-68/180, pi*-90/180, 0] #home pose
-
-
-# #모바일 제어
-# goal_x_dist = mobile_joints[1] #meter
-# angle_to_goal = mobile_joints[0]
-# goal_distance = 0
-# r.sleep()
-
-# if theta-angle_to_goal > 0:
-#     while abs(theta-angle_to_goal) > 0.01:
-
-#         if abs(theta-angle_to_goal) < 0.2:
-#             speed.angular.z = 0.02
-#         else:
-#             speed.angular.z = 0.2
-
-#         pub.publish(speed)
-#         r.sleep()
-#         print "theta:",theta,"goal_th:",angle_to_goal
-# else:
-#     while abs(theta-angle_to_goal) > 0.01:
-
-#         if abs(theta-angle_to_goal) < 0.2:
-#             speed.angular.z = -0.02
-#         else:
-#             speed.angular.z = -0.2
-
-#         pub.publish(speed)
-#         r.sleep()
-#         print "theta:",theta,"goal_th:",angle_to_goal    
-
-
-# init_x = x
-# init_y = y
-
-# while abs(goal_x_dist - goal_distance) >0.01:
-
-#     current_dist = abs(sqrt((x-init_x) ** 2 + (y-init_y) ** 2))
-#     goal_distance = current_dist
-
-#     if abs(goal_x_dist - goal_distance) < 0.1:
-#         speed.linear.x = 0.02
-#         speed.angular.z = 0
-#     else:
-#         speed.linear.x = 0.3
-#         speed.angular.z = 0
+while not rospy.is_shutdown():
+    sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, amcl_pose_callback)
     
-#     pub.publish(speed)
-#     r.sleep()
-#     goal_distance = current_dist
-#     print "distance:",goal_distance
 
 
 
-# joint_goal_list = [pi*90/180, pi*-130/180 , pi*111/180, pi*-68/180, pi*-90/180, 0] #home pose
-
-# #매니퓰레이터 제어
-# joint_goal[0] = joint_goal_list[0]
-# joint_goal[1] = joint_goal_list[1]
-# joint_goal[2] = joint_goal_list[2]
-# joint_goal[3] = joint_goal_list[3]
-# joint_goal[4] = joint_goal_list[4]
-# joint_goal[5] = joint_goal_list[5]
-# move_group.go(joint_goal, wait=True)
-
-
-# joint_goal_list = [pi/2,0,0,0,0,0] #home pose
-# joint_goal[0] = joint_goal_list[0]
-# joint_goal[1] = joint_goal_list[1]
-# joint_goal[2] = joint_goal_list[2]
-# joint_goal[3] = joint_goal_list[3]
-# joint_goal[4] = joint_goal_list[4]
-# joint_goal[5] = joint_goal_list[5]
-# move_group.go(joint_goal, wait=True)
-
-# move_group.stop()
  

@@ -7,17 +7,34 @@ Door::Door()
     */
     door_hinge_point.header.frame_id = "map";
     door_hinge_point.header.stamp = ros::Time();
-    door_hinge_point.point.x = 1.80;
-    door_hinge_point.point.y = -0.20;
+    // door_hinge_point.point.x = 0.20;
+    // door_hinge_point.point.y = 1.80;
+    
+    // door_hinge_point.point.x = 1.80;
+    // door_hinge_point.point.y = -0.20;
+    
+    door_hinge_point.point.x = 0.775;
+    door_hinge_point.point.y = -0.925;
     door_hinge_point.point.z = 0.0;
 
     door_handle_point.header.frame_id = "map";
     door_handle_point.header.stamp = ros::Time();
-    door_handle_point.point.x = 1.80;
-    door_handle_point.point.y = 0.71;//for max door point (door_handle_point.point.y + 0.08) 
+    // door_handle_point.point.x = -0.71;//for max door point (door_handle_point.point.x + 0.08)//door_handle_point.point.x = 1.80;
+    // door_handle_point.point.y = 1.80;//door_handle_point.point.y = 0.71;//for max door point (door_handle_point.point.y + 0.08) 
+    
+    // door_handle_point.point.x = 1.80;
+    // door_handle_point.point.y = 0.71;
+    
+    door_handle_point.point.x = 0.775;
+    door_handle_point.point.y = -0.425;
     door_handle_point.point.z = 0.0;
 
-    length = sqrt(pow((door_handle_point.point.x - door_hinge_point.point.x),2) + pow(((door_handle_point.point.y+0.08) - door_hinge_point.point.y),2));//=0.71m
+    length = sqrt(pow((door_handle_point.point.x - door_hinge_point.point.x),2) + pow((door_handle_point.point.y - door_hinge_point.point.y),2));//=0.5m
+    
+    // length = sqrt(pow((door_handle_point.point.x - door_hinge_point.point.x),2) + pow(((door_handle_point.point.y+0.08) - door_hinge_point.point.y),2));//=0.71m
+
+    // length = sqrt(pow(((door_handle_point.point.x-0.08) - door_hinge_point.point.x),2) + pow(((door_handle_point.point.y) - door_hinge_point.point.y),2));//=0.71m
+    
     radius = hypot((door_handle_point.point.x - door_hinge_point.point.x),(door_handle_point.point.y - door_hinge_point.point.y));
     max_door_angle_degree = 135.0;
 };
