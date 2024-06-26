@@ -79,6 +79,7 @@ Visualization Manager:
     - Acceleration_Scaling_Factor: 1
       Class: moveit_rviz_plugin/MotionPlanning
       Enabled: false
+      JointsTab_Use_Radians: true
       Move Group Namespace: ""
       MoveIt_Allow_Approximate_IK: false
       MoveIt_Allow_External_Program: false
@@ -107,245 +108,6 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          base:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          base_footprint:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          control_box_ur3_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          ee_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          forearm_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_bumper_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_laser_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_laser_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          front_left_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_right_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          g_camera_bottom_screw_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_color_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_color_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_depth_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_depth_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra1_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra1_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra2_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra2_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          h_camera_bottom_screw_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_color_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_color_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_depth_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_depth_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra1_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra1_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra2_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra2_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          imu_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          inertial_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          rear_bumper_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rear_left_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rear_right_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_base:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_l1:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_l2:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_r1:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_r2:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          shoulder_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          tool0:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          top_chassis_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          top_plate_front_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          top_plate_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          top_plate_rear_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          upper_arm_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          ur3_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          user_rail_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_1_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_2_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_3_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
         Loop Animation: false
         Robot Alpha: 0.5
         Robot Color: 150; 50; 150
@@ -392,245 +154,6 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          base:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          base_footprint:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          control_box_ur3_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          ee_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          forearm_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_bumper_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_laser_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_laser_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          front_left_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          front_right_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          g_camera_bottom_screw_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_color_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_color_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_depth_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_depth_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra1_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra1_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra2_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_infra2_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          g_camera_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          h_camera_bottom_screw_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_color_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_color_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_depth_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_depth_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra1_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra1_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra2_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_infra2_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          h_camera_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          imu_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          inertial_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          rear_bumper_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rear_left_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rear_right_wheel_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_base:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_l1:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_l2:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_r1:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          rh_p12_rn_r2:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          shoulder_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          tool0:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          top_chassis_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          top_plate_front_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          top_plate_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          top_plate_rear_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          upper_arm_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          ur3_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          user_rail_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_1_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_2_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_3_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
         Robot Alpha: 1
         Show Robot Collision: false
         Show Robot Visual: true
@@ -874,7 +397,7 @@ Visualization Manager:
         control_box_ur3_link:
           Value: false
         ee_link:
-          Value: false
+          Value: true
         forearm_link:
           Value: false
         front_bumper_link:
@@ -934,7 +457,7 @@ Visualization Manager:
         map:
           Value: true
         odom:
-          Value: false
+          Value: true
         rear_bumper_link:
           Value: false
         rear_left_wheel_link:
@@ -966,7 +489,7 @@ Visualization Manager:
         upper_arm_link:
           Value: false
         ur3_base_link:
-          Value: false
+          Value: true
         user_rail_link:
           Value: false
         wrist_1_link:
@@ -1071,16 +594,40 @@ Visualization Manager:
       Marker Topic: /door_planner/tree
       Name: Marker
       Namespaces:
-        {}
+        tree: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /door_planner/footprint
       Name: Marker
       Namespaces:
         {}
       Queue Size: 100
+      Value: false
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /global_plan
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
@@ -1110,7 +657,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.093495845794678
+      Distance: 4.587271690368652
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1126,9 +673,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0547963380813599
+      Pitch: 0.9747966527938843
       Target Frame: <Fixed Frame>
-      Yaw: 5.393589496612549
+      Yaw: 5.483591079711914
     Saved: ~
 Window Geometry:
   Displays:

@@ -8,7 +8,14 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "utility": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "*.tcc": "cpp",
+        "string": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp"
     },
     "cmake.configureOnOpen": true,
     "python.autoComplete.extraPaths": [

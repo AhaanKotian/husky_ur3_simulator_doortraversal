@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 
@@ -137,8 +137,8 @@ def move_ee(Px,Py,Pz,Rx,Ry,Rz,Rw):
   Oz = Rz-rot[2]
   Ow = Rw
 
-  print 'real_planning_pose',x,y,z,Ox,Oy,Oz,Ow
-  print "============ Generating plan 1"
+  print ('real_planning_pose',x,y,z,Ox,Oy,Oz,Ow)
+  print ("============ Generating plan 1")
   pose_target = Pose()
   pose_target.position.x = x
   pose_target.position.y = y
@@ -149,14 +149,14 @@ def move_ee(Px,Py,Pz,Rx,Ry,Rz,Rw):
   pose_target.orientation.w = Ow
   move_group.set_pose_target(pose_target)
   move_group.go(True)
-  print "============ plan 1 complete!"
+  print ("============ plan 1 complete!")
 
   trans_1,rot_1 = get_TF('odom','/ee_link')
-  print "============ ee pose : "
-  print move_group.get_current_pose()
-  print move_group.get_planning_frame()
-  print 'odom_TF',trans_1,rot_1
-  print "============"
+  print ("============ ee pose : ")
+  print (move_group.get_current_pose())
+  print (move_group.get_planning_frame())
+  print ('odom_TF',trans_1,rot_1)
+  print ("============")
 
 def move_base(a,b):
 
@@ -211,7 +211,7 @@ def move_base(a,b):
         pub.publish(speed)
         r.sleep()           
 
-    print 'mobile robot movement complete!'
+    print ('mobile robot movement complete!')
 
     
     return x,y
@@ -263,14 +263,14 @@ def z_path_planner(b):
     
 def down_demo():
     move_Joint(1.57,-2.27,1.93,-1.19,-1.57,0) #down pose 
-    print "Down demo is ready to start!, press enter..!"
+    print ("Down demo is ready to start!, press enter..!")
     raw_input()
     z_path_planner(0.1)
     y_path_planner(-0.112)  
     x_path_planner(0.1)    
     z_path_planner(-0.2)
     rospy.sleep(3)
-    print "Down demo complete!, Go to home pose..!"
+    print ("Down demo complete!, Go to home pose..!")
 
 
 def cartesian_path(x,y,z):
@@ -305,7 +305,7 @@ def Grasp_object(x_dir,y_dir,z_dir):
 
     current_mobile_x,current_mobile_y = move_base(x_dir-0.5,y_dir)
     #z_path_planner(0.1)
-    print "Grasping is ready to start!, press enter..!"
+    print ("Grasping is ready to start!, press enter..!")
     raw_input()
     curr_pose = move_group.get_current_pose().pose
     
@@ -313,10 +313,10 @@ def Grasp_object(x_dir,y_dir,z_dir):
     y_distance = current_mobile_y+curr_pose.position.y -  y_dir  
     z_distance = curr_pose.position.z -  z_dir  
 
-    print curr_pose.position.x
-    print 'x_dir =',x_dir,'y_dir=',y_dir,'z_dir=',z_dir
+    print (curr_pose.position.x)
+    print ('x_dir =',x_dir,'y_dir=',y_dir,'z_dir=',z_dir)
 
-    print 'x =',x_distance,'y=',y_distance,'z=',z_distance
+    print ('x =',x_distance,'y=',y_distance,'z=',z_distance)
     #y_path_planner(-y_distance)  
     #x_path_planner(-x_distance)    
     #z_path_planner(-z_distance)
@@ -325,8 +325,8 @@ def Grasp_object(x_dir,y_dir,z_dir):
 
     rospy.sleep(3)
     (result_xyz,result_rot) = get_TF('/odom','ee_link')
-    print 'xyz_result=',result_xyz[0],result_xyz[1],result_xyz[2]
-    print "Grasping complete!, Go to home pose..!"
+    print ('xyz_result=',result_xyz[0],result_xyz[1],result_xyz[2])
+    print ("Grasping complete!, Go to home pose..!")
     
     
 

@@ -37,26 +37,23 @@ ik_solver = IK("ur3_base_link","ee_link")
 seed_state = [0.0] * ik_solver.number_of_joints
 goal_state = [0.0] * ik_solver.number_of_joints
 
-
 group_name = "ur3_manipulator"
 move_group = MoveGroupCommander(group_name)
 FIXED_FRAME = 'odom'
 
-def get_global_plan():
+door_mp_goal = PoseStamped()
+door_mp_goal.header.frame_id = "map"
+d = 0.2
+door_mp_goal.pose.position.x = 0.775
+door_mp_goal.pose.position.y = -0.675
+door_mp_goal.pose.orientation.w = 1.0
+
+def get_global_plan(start,goal):
     # Create service client
     global response
     client = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
     # Create request message
-    start = PoseStamped()
-    start.header.frame_id = "map"
-    start.pose.position.x = -0.075
-    start.pose.position.y = -0.025
-    start.pose.orientation.w = 1.0
-    goal = PoseStamped()
-    goal.header.frame_id = "map"
-    goal.pose.position.x = 1.525
-    goal.pose.position.y = -1.425
-    goal.pose.orientation.w = 1.0
+    print("start(x,y) = ({},{}) & goal(x,y) = ({},{})".format(start.pose.position.x,start.pose.position.y,goal.pose.position.x,goal.pose.position.y))
     tolerance = 0.1
 
     # Call service
@@ -68,7 +65,7 @@ def get_global_plan():
         # Print the pose and orientation of the first waypoint
         if response.plan.poses:
             for pose_i in response.plan.poses:
-                print("Waypoint pose: %f, %f, %f, %f, %f, %f, %f",
+                print("Waypoint pose: ",
                                 pose_i.pose.position.x,
                                 pose_i.pose.position.y,
                                 pose_i.pose.position.z,
@@ -152,16 +149,17 @@ def move_base(a,b):
 
     print ('mobile robot movement complete!')
 
-    
     return x,y
 
 def manipulation(base_pose_i):
-    
+
     i=0
     for pose_i in msg.robot_pose.poses:
         if pose_i.pose.position.x == base_pose_i.pose.position.x and pose_i.pose.position.y == base_pose_i.pose.position.y:
             break
         i = i+1
+    if len(msg.door_handle_pose.poses) == i:
+        return
     if msg.door_handle_pose.poses[i].pose.position.y < -1.28:
         return
     
@@ -197,11 +195,14 @@ def manipulation(base_pose_i):
 
 def move_to_base_waypoints():
     global response
-    i=0
-    for pose_i in response.plan.poses:
-        move_base(pose_i.pose.position.x,pose_i.pose.position.y)
-        manipulation(pose_i)
-        rospy.sleep(5)
+    # i=0
+    # for pose_i in response.plan.poses:
+    #     move_base(pose_i.pose.position.x,pose_i.pose.position.y)
+    #     manipulation(pose_i)
+    #     rospy.sleep(5)
+    move_base(response.plan.poses[0].pose.position.x,response.plan.poses[0].pose.position.y)
+    rospy.sleep(5)
+        
         
     # move_base(response.plan.poses[2].pose.position.x,response.plan.poses[2].pose.position.y)
 
@@ -212,22 +213,56 @@ if __name__ == "__main__":
     rospy.init_node('door_opening_s2', anonymous=True)
     robot = RobotCommander()
     scene = PlanningSceneInterface()
+    start = PoseStamped()
+    start.header.frame_id = "map"
+    start.pose.position.x = -0.075
+    start.pose.position.y = -0.025
+    start.pose.orientation.w = 1.0
+    final_goal = PoseStamped()
+    final_goal.header.frame_id = "map"
+    final_goal.pose.position.x = 1.525
+    final_goal.pose.position.y = -1.425
+    final_goal.pose.orientation.w = 1.0
 
-    t1 = threading.Thread(target=get_global_plan, name='t1')
-    t2 = threading.Thread(target=get_door_handle_path, name='t2')
+    start_i = PoseStamped()
+    start_i.header.frame_id = start.header.frame_id
+    start_i.pose.position.x = start.pose.position.x
+    start_i.pose.position.y = start.pose.position.y
+    start_i.pose.orientation.w = start.pose.orientation.w
     
-    t1.start()
-    t2.start()
+    goal = PoseStamped()
+    goal.header.frame_id = "map"
+    goal.pose.orientation.w = 1.0
+    while math.hypot((start_i.pose.position.x - final_goal.pose.position.x),(start_i.pose.position.y - final_goal.pose.position.y)) >= 0.1 :
+        print("goal(x,y) = ({},{}) & start_i(x,y) = ({},{})".format(goal.pose.position.x,goal.pose.position.y,start_i.pose.position.x,start_i.pose.position.y))
+        if start_i.pose.position.x < door_mp_goal.pose.position.x :
+            D = math.hypot((door_mp_goal.pose.position.x - start_i.pose.position.x),(door_mp_goal.pose.position.y - start_i.pose.position.y))
+            goal.pose.position.x = start_i.pose.position.x + (d * (door_mp_goal.pose.position.x - start_i.pose.position.x))/D
+            goal.pose.position.y = start_i.pose.position.y + (d * (door_mp_goal.pose.position.y - start_i.pose.position.y))/D
+        else :
+            D = math.hypot((final_goal.pose.position.x - start_i.pose.position.x),(final_goal.pose.position.y - start_i.pose.position.y))
+            goal.pose.position.x = start_i.pose.position.x + (d * (final_goal.pose.position.x - start_i.pose.position.x))/D
+            goal.pose.position.y = start_i.pose.position.y + (d * (final_goal.pose.position.y - start_i.pose.position.y))/D
+        print("goal'(x,y) = ({},{}) & start_i(x,y) = ({},{})".format(goal.pose.position.x,goal.pose.position.y,start_i.pose.position.x,start_i.pose.position.y))
+        t1 = threading.Thread(target=get_global_plan, args=[start_i,goal], name='t1')
+        t2 = threading.Thread(target=get_door_handle_path, name='t2')
+        
+        t1.start()
+        t2.start()
 
-    t1.join()
-    t2.join()
+        t1.join()
+        t2.join()
+
+        move_to_base_waypoints()
+
+        start_i = copy.deepcopy(response.plan.poses[0])
 
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                 DisplayTrajectory,
                                                 queue_size=20)
     move_group.go([1.57,-2.27,1.93,-1.19,-1.57,0], wait=True) 
 
-    move_to_base_waypoints()
+    
 
 
 

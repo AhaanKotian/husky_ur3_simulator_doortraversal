@@ -1,5 +1,8 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
+#include <tf2/convert.h>
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_core/base_global_planner.h>
@@ -22,6 +25,7 @@
 #include <std_msgs/ColorRGBA.h>
 #include <std_msgs/Header.h>
 #include <visualization_msgs/Marker.h>
+#include <fstream>
 #include "state.h"
 #include "Door.h"
 
@@ -68,8 +72,12 @@ public:
     ros::Publisher tree_pub;
     ros::Publisher poly_pub;
     
+    //files 
+    ofstream sth, awc;
+    ifstream mfile;
+    
     ARAStar();
-    ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* costmap_, double epsilon);
+    ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* costmap_);
     
     vector<unsigned int> compute_successors_idx_set(State s);
     vector<unsigned int> compute_idx_path();

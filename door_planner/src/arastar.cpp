@@ -4,49 +4,71 @@ ARAStar::ARAStar()
 {
 
 };
-ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* costmap_, double epsilon) : start_idx_oned(start_idx_oned), goal_idx_oned(goal_idx_oned), costmap(costmap_), epsilon(epsilon)
+ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* costmap_) : start_idx_oned(start_idx_oned), goal_idx_oned(goal_idx_oned), costmap(costmap_)
 {
+    ROS_INFO_STREAM("In ARAStar()");
     nx = costmap->getSizeInCellsX(); ny = costmap->getSizeInCellsY();
+    //initialise goal state
+    goal.idx = goal_idx_oned;
+    goal.g = double(INT16_MAX);
+    goal.h = 0;
+    goal.epsilon = epsilon;
+    goal.a = 4;
+    unsigned int mx,my;
+    costmap->indexToCells(goal_idx_oned,mx,my);
+    costmap->mapToWorld(mx,my,goal_wx,goal_wy);
     //initialise start state
     start.idx = start_idx_oned;
     start.g = 0.0;
     start.h = heuristic(start_idx_oned,0.0,0);
     start.epsilon = epsilon;
     start.a = 0;
-    //initialise goal state
-    goal.idx = goal_idx_oned;
-    goal.g = double(INT16_MAX);
-    goal.h = 0;
-    goal.epsilon = epsilon;
-    goal.a = 4; 
-    unsigned int mx,my;
-    costmap->indexToCells(goal_idx_oned,mx,my);
-    costmap->mapToWorld(mx,my,goal_wx,goal_wy);
     // visited.resize(nx*ny,NULL);
     map_ = costmap->getCharMap();
     ROS_INFO_STREAM("MAP SIZE = "<<nx*ny);
-    reach = 0.5;//0.5m = 500mm = 50cm; from ur3_base_link
 
+    //files
+    // sth.open("/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/door_planner/files/state_to_heuristic.txt");
+    // string state_to_h_msg = to_string(start.idx)+","+to_string(start.a)+":"+to_string(start.h);
+    // sth<<state_to_h_msg<<endl;
+    // awc.open("/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/door_planner/files/action_with_cost.txt");
+    
     //for visualisation
     rosNode.reset(new ros::NodeHandle( "door_planner" ));
     init_line(&tree);
     init_line(&poly);
     tree_pub = rosNode->advertise<visualization_msgs::Marker>("tree",1);
     poly_pub = rosNode->advertise<visualization_msgs::Marker>("footprint",1);
+
+    //params
+    (*rosNode).getParam("/move_base/DoorPlanner/epsilon",epsilon);
+    (*rosNode).getParam("/move_base/DoorPlanner/reach",reach);
+    vector<double> door_hinge_xyz, door_handle_xyz;
+    (*rosNode).getParam("/move_base/DoorPlanner/door_handle_xyz",door_handle_xyz);
+    door.door_handle_point.point.x = door_handle_xyz[0];door.door_handle_point.point.y = door_handle_xyz[1];door.door_handle_point.point.z = door_handle_xyz[2];
+    (*rosNode).getParam("/move_base/DoorPlanner/door_hinge_xyz",door_hinge_xyz);
+    door.door_hinge_point.point.x = door_hinge_xyz[0];door.door_hinge_point.point.y = door_hinge_xyz[1];door.door_hinge_point.point.z = door_hinge_xyz[2];
+    (*rosNode).getParam("/move_base/DoorPlanner/max_door_angle_degree",door.max_door_angle_degree);
+    
+    //door params
+    door.door_hinge_point.header.frame_id = "map";
+    door.door_hinge_point.header.stamp = ros::Time();
+    door.door_handle_point.header.frame_id = "map";
+    door.door_handle_point.header.stamp = ros::Time();
+    door.length = hypot( (door.door_handle_point.point.x - door.door_hinge_point.point.x) , (door.door_handle_point.point.y - door.door_hinge_point.point.y) );
+    door.radius = hypot( (door.door_handle_point.point.x - door.door_hinge_point.point.x) , (door.door_handle_point.point.y - door.door_hinge_point.point.y) );
+    
+    // ROS_INFO_STREAM("REACH = "<<reach);ROS_INFO_STREAM("door.max_door_angle_degree = "<<door.max_door_angle_degree);ROS_INFO_STREAM("epsilon = "<<epsilon);ROS_INFO_STREAM("door.door_handle_point.point = ("<<door.door_handle_point.point.x<<","<<door.door_handle_point.point.y<<")");ROS_INFO_STREAM("door.door_hinge_point.point = ("<<door.door_hinge_point.point.x<<","<<door.door_hinge_point.point.y<<")");ROS_INFO_STREAM("door.length = "<<door.length);ROS_INFO_STREAM("door.radius = "<<door.radius);
+    // ros::Duration(20).sleep();
     //base_link ---> ur3_base_link transform
     try
     {
         listener.waitForTransform("/ur3_base_link","/base_link",ros::Time(0),ros::Duration(10.0));
-        // listener.waitForTransform("/base_link","/map",ros::Time(0),ros::Duration(10.0));
-        // listener.lookupTransform("/ur3_base_link",ros::Time(0),"/base_link",ros::Time(0),"map",transform);
         listener.lookupTransform("/ur3_base_link","/base_link",ros::Time(0),transform);
     }
     catch(tf::TransformException ex)
     {
         ROS_INFO_STREAM(" Tranform error : "<<ex.what());
-        // transform_x = 0.33;
-        // transform_y = 0.0;
-
     }
     ROS_INFO_STREAM("transform.getOrigin().x() = "<<transform.getOrigin().x()<<" & transform.getOrigin().y() = "<<transform.getOrigin().y());
     rosNode.reset(new ros::NodeHandle("door_planner"));
@@ -57,24 +79,29 @@ ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* c
     ROS_INFO_STREAM("inside_line_of_door(start.idx) = "<<inside_line_of_door(start.idx,0.0)<<" & inside_line_of_door(goal.idx) = "<<inside_line_of_door(goal.idx,0.0));
     // ROS_INFO_STREAM("compute_a(goal.idx) = "<<compute_a(goal.idx,0.0));
     ROS_INFO_STREAM("start.h = "<<start.h);
-
+    // vector<pair<double,double> > test_footprint = compute_robot_footprint(goal_wx,goal_wy,0.0);
+    // ROS_INFO_STREAM("map_["<<goal.idx<<"] = "<<int(map_[goal.idx]));
+    // ros::Duration(20).sleep();
     // unsigned int idx_check;
     // costmap->worldToMap(double(1.87),double(0.60),mx,my);
     // idx_check = costmap->getIndex(mx,my);
-    unsigned int test_idx = 25285,pred_test_idx = 25476;
-    // is_occupied() test
-    ROS_INFO_STREAM("is_occupied() = "<<is_occupied(test_idx,pred_test_idx));
-    ROS_INFO_STREAM("GOAL TEST :");
-    vector<pair<unsigned int , vector<unsigned int> > > test;
-    test = compute_a(test_idx,compute_heading_angle(pred_test_idx,test_idx));
-    for(pair<unsigned int , vector<unsigned int> > i:test)
-    {
-        ROS_INFO_STREAM("a = "<<i.first<<" & rda_range = [");
-        for(unsigned int i_rda:i.second)
-            ROS_INFO_STREAM(i_rda);
-    }
-    ROS_INFO_STREAM("]");
-    vector<pair<double,double> > test_footprint = compute_robot_footprint(goal_wx,goal_wy,0.0);
+    // vector<unsigned int> successors = compute_successors_idx_set(goal);
+    // for(unsigned int succ_idx:successors)
+    // {
+    //     // is_occupied() test
+    //     ROS_INFO_STREAM("is_occupied() = "<<is_occupied(goal.idx,succ_idx));
+    // }
+    // unsigned int test_idx = goal.idx, pred_test_idx = start.idx;
+    // ROS_INFO_STREAM("GOAL TEST :");
+    // vector<pair<unsigned int , vector<unsigned int> > > test;
+    // test = compute_a(test_idx,compute_heading_angle(pred_test_idx,test_idx));
+    // for(pair<unsigned int , vector<unsigned int> > i:test)
+    // {
+    //     ROS_INFO_STREAM("a = "<<i.first<<" & rda_range = [");
+    //     for(unsigned int i_rda:i.second)
+    //         ROS_INFO_STREAM(i_rda);
+    // }
+    // ROS_INFO_STREAM("]");
     // ros::Duration(20).sleep();
     //compute_robot_footprint() test
     // vector<pair<double,double> > test_footprint = compute_robot_footprint(1.87,0.60,M_PI_2);
@@ -107,7 +134,7 @@ double ARAStar::heuristic(unsigned int idx, double theta, unsigned int a)
     y_midpt = (door.door_handle_point.point.y + door.door_hinge_point.point.y)/2;
     // now find desired point i.e. coordinates of base-link that has crossed over the doorsill.
     double x_cotd , y_cotd; // cotd : crossed over the doorsill
-    x_cotd = x_midpt + 0.7;//0.5(husky length from base_link ) + 0.2(some arbitrary threshold to crossover doorsill)
+    x_cotd = x_midpt + 0.16;//0.5(husky length from base_link ) + 0.2(some arbitrary threshold to crossover doorsill)
     y_cotd = y_midpt;
     while(ai<=4)
     {
@@ -234,43 +261,57 @@ vector<pair<double,double> > ARAStar::compute_robot_footprint(double curr_wx, do
     vector<pair<double,double> > footprint;//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
     pair<double,double> footprint_coordinate;
     double x,y;
-    for(int i=0;i<4;i++)
+    // ROS_INFO_STREAM("A1");
+    vector<string> footprint_param; string delimiter = ","; string footprint_x,footprint_y;
+    (*rosNode).getParam("/move_base/DoorPlanner/footprint",footprint_param);
+    size_t first=0, last=0;
+    // while((first = footprint_param.find_first_not_of(delimiter,last))!= string::npos)
+    // {
+    //     last = footprint_param.find(delimiter,first);
+    //     footprint_param_vector.push_back(footprint_param.substr(first,last-first));
+    //     ROS_INFO_STREAM("footprint_param.substr(first,last-first) = "<<footprint_param.substr(first,last-first));
+    // }
+    // ROS_INFO_STREAM("B1");
+    for(auto footprint_xy:footprint_param)
     {
-        if(i==0)
-        {
-            x = 0.16;//considering centre of robot at origin / corodinates of footprint in base_link frame    
-            y = 0.1;
-            // x = 0.5;//considering centre of robot at origin / corodinates of footprint in base_link frame    
-            // y = 0.35;
-        }
-        else if(i==1)
-        {
-            x = 0.16;
-            y = -0.1;
-            // x = 0.5;
-            // y = -0.35;
-        }
-        else if(i==2)
-        {
-            x = -0.16;
-            y = 0.1;
-            // x = -0.5;
-            // y = 0.35;
-        }
-        else if(i==3)
-        {
-            x = -0.16;
-            y = -0.1;
-            // x = -0.5;
-            // y = -0.35;
-        }
+        // if(i==0)
+        // {
+        //     x = atof((footprint_param.substr(2,4)).c_str());//considering centre of robot at origin / corodinates of footprint in base_link frame    
+        //     y = atof((footprint_param.substr(7,4)).c_str());
+        //     // x = 0.5;//considering centre of robot at origin / corodinates of footprint in base_link frame    
+        //     // y = 0.35;
+        // }
+        // else if(i==1)
+        // {
+        //     x = atof((footprint_param.substr(13,4)).c_str());
+        //     y = atof((footprint_param.substr(18,4)).c_str());
+        //     // x = 0.5;
+        //     // y = -0.35;
+        // }
+        // else if(i==2)
+        // {
+        //     x = atof((footprint_param.substr(2,4)).c_str());
+        //     y = atof((footprint_param.substr(2,3)).c_str());
+        //     // x = -0.5;
+        //     // y = 0.35;
+        // }
+        // else if(i==3)
+        // {
+        //     x = atof((footprint_param.substr(2,4)).c_str());
+        //     y = atof((footprint_param.substr(2,3)).c_str());
+        //     // x = -0.5;
+        //     // y = -0.35;
+        // }
+        last = footprint_xy.find(delimiter,first); 
+        x = atof((footprint_xy.substr(first,last-first)).c_str());//considering centre of robot at origin / corodinates of footprint in base_link frame
+        y = atof((footprint_xy.substr(last+1,footprint_xy.size()-1-last)).c_str());
         //applying rotation matrix & adding curr_wx & curr_wy to translate it to map_frame from base_link frame
-        //ROS_INFO_STREAM("x = "<<x<<"*"<<cos(theta)" - "<<y<<"*"<<sin(theta)<<" + "<<curr_wx);
+        // ROS_INFO_STREAM("x = "<<x<<"*"<<cos(theta)<<" - "<<y<<"*"<<sin(theta)<<" + "<<curr_wx);
         footprint_coordinate.first = x*cos(theta) - y*sin(theta) + curr_wx;
-        //ROS_INFO_STREAM("y = "<<x<<"*"<<sin(theta)" - "<<y<<"*"<<cos(theta)<<" + "<<curr_wy);
+        // ROS_INFO_STREAM("y = "<<x<<"*"<<sin(theta)<<" + "<<y<<"*"<<cos(theta)<<" + "<<curr_wy);
         footprint_coordinate.second = x*sin(theta) + y*cos(theta) + curr_wy;
         footprint.push_back(footprint_coordinate);
-    }
+    }//ROS_INFO_STREAM("C1");
     // ROS_INFO_STREAM("("<<curr_wx<<","<<curr_wy<<");s footprint = [");
     // for(auto f:footprint)
     //     ROS_INFO_STREAM("("<<f.first<<","<<f.second<<")");
@@ -320,7 +361,7 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
     costmap->indexToCells(idx,mx,my);
     double curr_wx,curr_wy;
     costmap->mapToWorld(mx,my,curr_wx,curr_wy);
-
+    // ROS_INFO_STREAM("A");
     //transformed from base_link's coordinates to ur3_base_link's coordinates
     double curr_ur3_wx,curr_ur3_wy;
     //double transform_x = -1*transform.getOrigin().y();
@@ -346,11 +387,11 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
         reachable_door_angles.push_back(reachable_door_angles_a);
         return reachable_door_angles;
     }
-
+    // ROS_INFO_STREAM("B");
     vector<pair<double,double> > footprint = compute_robot_footprint(curr_wx,curr_wy,theta);//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
     vector<unsigned int> a_1_door_angles,a_2_door_angles,a_3_door_angles;
     unsigned int angle;
-    
+    // ROS_INFO_STREAM("C");
     for(angle=0;angle<=door.max_door_angle_degree;angle++)
     {
         if(!is_door_handle_reachable(idx,curr_ur3_wx,curr_ur3_wy,angle))
@@ -370,7 +411,7 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
         }
         else
             a_3_door_angles.push_back(angle);
-    }
+    }//ROS_INFO_STREAM("D");
     if(a_3_door_angles.size()>0)
     {
         reachable_door_angles_i = a_3_door_angles;
@@ -420,6 +461,7 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
             
         }
     }
+    // ROS_INFO_STREAM("POST if else");
     // for(pair<unsigned int , vector<unsigned int> > i:reachable_door_angles)
     // {
     //     ROS_INFO_STREAM("For Current ur3 pose : ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") ; a = "<<i.first<<" & rda_range = [");
@@ -639,19 +681,19 @@ double ARAStar::cost(State s, State succ)
         c_action = INT16_MAX;
 
     //c_map computation
-    c_map = map_[succ.idx];
-    //ROS_INFO_STREAM("succ.idx = "<<succ.idx<<" & succ.a = "<<succ.a<<" & s.idx = "<<s.idx<<" & s.a = "<<s.a); 
+    c_map = int(map_[succ.idx]);
+    //  ROS_INFO_STREAM("c_map = "<<c_map<<" & int(map_[succ.idx]) = "<<int(map_[succ.idx])<<" & int(map_[succ.idx])-48 = "<<(int(map_[succ.idx])-48)); 
     //c_door computation
     if( (s.a>=1 && s.a<=3) && (succ.a >=1 && succ.a<=3) )
     {
         c_door = INT16_MAX;
         // c_door = K*pow((d - d_min),2)
         double K, d, d_min;
-        K=100.0; // positive coefficient
+        K=1.0; // positive coefficient
         d_min = 0.05; // 0.05m : based on reachability data
 
         // calculate d:dist from base of manipulator to door handle 
-        vector<pair<unsigned int , vector<unsigned int> > > s_idx_rda = compute_reachable_door_angles(s.idx,compute_heading_angle(s.idx,succ.idx));
+        vector<pair<unsigned int , vector<unsigned int> > > s_idx_rda = compute_reachable_door_angles(s.idx,compute_heading_angle(pred[make_pair(s.idx,s.a)].first,s.idx));
         vector<unsigned int> s_rda;//reachable door angles from state s
         //ROS_INFO_STREAM();
         for(pair<unsigned int , vector<unsigned int> > s_idx_a_rda:s_idx_rda)
@@ -679,7 +721,7 @@ double ARAStar::cost(State s, State succ)
         // double transform_y = transform.getOrigin().y();
         double transform_x = 0.08;//0.08
         double transform_y = 0.0;//0.0
-        double theta = compute_heading_angle(s.idx,succ.idx);
+        double theta = compute_heading_angle(pred[make_pair(s.idx,s.a)].first,s.idx);
         // curr_ur3_wx = curr_wx + transform.getOrigin().x();
         // curr_ur3_wy = curr_wy + transform.getOrigin().y();
         curr_ur3_wx = curr_wx + transform_x*cos(theta) - transform_y*sin(theta);
@@ -809,7 +851,7 @@ bool ARAStar::is_occupied(unsigned int succ_idx, unsigned int s_idx)
     {
         idx = costmap->getIndex(map_cell.x,map_cell.y);
         //ROS_INFO_STREAM(idx);
-        if(map_[idx]>128)
+        if(map_[idx]>248)
         {
             //ROS_INFO_STREAM("Returning true for idx = "<<idx);
             return true;
@@ -826,7 +868,7 @@ void ARAStar::compute_cartesian_door_handle_path()
     door_handle_pose.header.stamp = ros::Time::now();
     door_handle_pose.header.frame_id = "map";
     
-    door_handle_pose.pose.position.z = 0.8;
+    door_handle_pose.pose.position.z = 0.5;
     door_handle_pose.pose.orientation.x = 0.0;
     door_handle_pose.pose.orientation.y = 0.0;
     door_handle_pose.pose.orientation.z = 0.0;
@@ -851,10 +893,13 @@ vector<unsigned int> ARAStar::compute_idx_path()
     idx_path.push_back(goal.idx);
     pair<unsigned int,unsigned int> crawl = make_pair(goal.idx,goal.a);
     pair<unsigned int,unsigned int> post_last = make_pair(0,0);
+    unsigned int mx,my,idx;
+    double wx,wy;
+    costmap->mapToWorld(mx,my,wx,wy);
     while(pred[crawl]!=post_last)
     {
         idx_path.push_back(pred[crawl].first);
-        ROS_INFO_STREAM("pred["<<crawl.first<<"] = "<<pred[crawl].first);
+        // ROS_INFO_STREAM("pred["<<crawl.first<<"] = "<<pred[crawl].first);
         // ROS_INFO_STREAM("BAHAR WALA pred[crawl] = "<<" & pred[pred[crawl]] = "<<pred[pred[crawl]]);
         if(pred[crawl]==pred[pred[crawl]])
         {
@@ -867,6 +912,16 @@ vector<unsigned int> ARAStar::compute_idx_path()
         else 
             door_angle_path.push_back(180);//for robot poses which do not have corresponding door angle sending 180 degree door angle
 
+        if(door_angle_path[door_angle_path.size()-1]>180)
+        {
+            ROS_INFO_STREAM("crawl.first(idx) = "<<crawl.first<<" & crawl.second(a) = "<<crawl.second);
+            vector<pair<unsigned int , vector<unsigned int> > > crawl_rda = compute_reachable_door_angles(crawl.first,compute_heading_angle(pred[make_pair(crawl.first,crawl.second)].first,crawl.first));
+            for(int i=0;i<crawl_rda.size();i++)
+                ROS_INFO_STREAM("crawl_rda[i].first(a) = "<<crawl_rda[i].first<<" & crawl_rda[i].second = ["<<crawl_rda[i].second[0]<<","<<crawl_rda[i].second[crawl_rda[i].second.size()-1]<<")");
+        }
+        costmap->indexToCells(crawl.first,mx,my);
+        costmap->mapToWorld(mx,my,wx,wy);
+        ROS_INFO_STREAM("base_posn = ("<<wx<<","<<wy<<") with door_angle = "<<door_angle_path[door_angle_path.size()-1]);
         if(crawl == make_pair(start.idx,start.a) )
             break;
         crawl=pred[crawl];
@@ -892,13 +947,15 @@ double ARAStar::fvalue(State s)
 };
 void ARAStar::improvePath()
 {
-    State s; bool found = false;
+    State s; bool found = false;//string state_to_h_msg, f_action_with_cost;
     unsigned int mx,my;
     double curr_wx,curr_wy,succ_wx,succ_wy;
-    //ROS_INFO_STREAM(" fvalue(goal) = "<<fvalue(goal)<<" & goal.idx = "<<goal.idx<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin()))<<" & (*(open.begin())).idx = "<<(*(open.begin())).idx<<" & open.size() = "<<open.size());
+    ROS_INFO_STREAM(" fvalue(goal) = "<<fvalue(goal)<<" & goal.idx = "<<goal.idx<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin()))<<" & (*(open.begin())).idx = "<<(*(open.begin())).idx<<" & open.size() = "<<open.size());
     unsigned int k=1; vector<pair<unsigned int , vector<unsigned int> > > succ_a; pair<unsigned int,unsigned int> succ_state, s_state;
     while( fvalue(goal) > fvalue(*(open.begin())) )
     {
+        // ROS_INFO_STREAM(" fvalue(goal) = "<<fvalue(goal)<<" & goal.idx = "<<goal.idx<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin()))<<" & (*(open.begin())).idx = "<<(*(open.begin())).idx<<" & open.size() = "<<open.size());
+     
         s = *(open.begin()); open.erase(*(open.begin()));
         // ROS_INFO_STREAM(" State s.idx = "<<s.idx<<" & goal.idx = "<<goal.idx<<" & fvalue(s) = "<<fvalue(s)<<" & fvalue(goal) = "<<fvalue(goal)<< " & epsilon = "<<epsilon<<" open.size() = "<<open.size());
         s_state.first = s.idx;s_state.second = s.a;
@@ -959,6 +1016,10 @@ void ARAStar::improvePath()
                 {
                     // ROS_INFO_STREAM(" PRE HEURISTIC() = "<< ros::Time::now().toSec());
                     State* successor = new State(succ_idx,double(INT16_MAX),heuristic(succ_idx,compute_heading_angle(s.idx,succ_idx),successor_a.first),epsilon,successor_a.first);//ROS_INFO_STREAM(" POST HEURISTIC() = "<< ros::Time::now().toSec());
+                    // //file write
+                    // state_to_h_msg = to_string(succ_idx)+","+to_string(successor->a)+":"+to_string(successor->h);
+                    // sth<<state_to_h_msg<<endl;
+                    
                     if(succ_idx == goal.idx && successor_a.first == goal.a)
                         visited[succ_state]=&goal;
                     else
@@ -977,10 +1038,16 @@ void ARAStar::improvePath()
                 // ROS_INFO_STREAM("if ke bahar visited[succ_idx]->idx = ");
                 succ = visited[succ_state];
                 // ROS_INFO_STREAM("if ke bahar succ->idx = "<<succ->idx);
-                
+                // if( succ_state.first == goal.idx)
+                //     ROS_INFO_STREAM((*succ).g<<" > "<<s.g<<" + "<<cost(s,*(succ)));
+                //     ros::Duration(20).sleep();
                 if((*succ).g > s.g + cost(s,(*succ)))
                 {
                     (*succ).g = s.g + cost(s,(*succ));
+                    pred[succ_state] = s_state;
+                    // if( succ_state.first == goal.idx)
+                    //     ROS_INFO_STREAM("goal.g = "<<(*succ).g);
+                    
                     // ROS_INFO_STREAM(" PRE IN_CLOSED() = "<< ros::Time::now().toSec()<<" FOR CLOSED.SIZE() = "<<closed.size());
                     if(!in_closed(succ))   
                         open.insert((*succ));
@@ -988,6 +1055,9 @@ void ARAStar::improvePath()
                         incons.insert((*succ));
                     // ROS_INFO_STREAM(" POST IN_CLOSED() = "<< ros::Time::now().toSec()<<" FOR CLOSED.SIZE() = "<<closed.size());
                 }
+                // f_action_with_cost = "(" + to_string(s.idx) + "," + to_string(s.a) + ")->(" + to_string(succ_idx) + "," + to_string(successor_a.first) + "); c = " + to_string(cost(s,(*succ)));
+                // awc<<f_action_with_cost<<endl;
+
                 // if(!is_action_feasible(s,succ_idx,successor_a.second,successor_a.first))
                 // {
                 //     ROS_INFO_STREAM("ACTION NOT FEASIBLE FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
@@ -1011,6 +1081,13 @@ void ARAStar::improvePath()
         // if(found==true){
         //     break;}
     }
+    // sth.close();
+    // awc.close();
+
+    // mfile.open("state_to_idx.txt");
+    // while( getline(mfile,state_to_h_msg) )
+    //     ROS_INFO_STREAM(state_to_h_msg);
+    // mfile.close();
 };
 vector<geometry_msgs::PoseStamped> ARAStar::search()
 {
@@ -1020,7 +1097,7 @@ vector<geometry_msgs::PoseStamped> ARAStar::search()
     //publish current epsilon-suboptimal solution
     while( epsilon > 1 )
     {
-        epsilon -= 0.2;
+        epsilon -= 0.5;
         open.insert(incons.begin() , incons.end());
         closed.clear();
         improvePath();
@@ -1028,6 +1105,52 @@ vector<geometry_msgs::PoseStamped> ARAStar::search()
     }
 
     vector<unsigned int> path = compute_idx_path();
+    // vector<unsigned int> path(46);path[0] = 80034;path[1] = 80418;
+    // path[2] = 80419;
+    // path[3] = 80420;
+    // path[4] = 80421;
+    // path[5] = 80422;
+    // path[6] = 80423;
+    // path[7] = 80424;
+    // path[8] = 80425;
+    // path[9] = 80426;
+    // path[10] = 80811;
+    // path[11] = 80812;
+    // path[12] = 80428;
+    // path[13] = 80044;
+    // path[14] = 79660;
+    // path[15] = 79275;
+    // path[16] = 79276;
+    // path[17] = 78892;
+    // path[18] = 78508;
+    // path[19] = 78124;
+    // path[20] = 77740;
+    // path[21] = 77356;
+    // path[22] = 76973;
+    // path[23] = 76590;
+    // path[24] = 76207;
+    // path[25] = 76208;
+    // path[26] = 76209;
+    // path[27] = 76210;
+    // path[28] = 76211;
+    // path[29] = 76212;
+    // path[30] = 76213;
+    // path[31] = 75830;
+    // path[32] = 75447;
+    // path[33] = 75064;
+    // path[34] = 74681;
+    // path[35] = 74297;
+    // path[36] = 73913;
+    // path[37] = 73530;
+    // path[38] = 73146;
+    // path[39] = 72762;
+    // path[40] = 72379;
+    // path[41] = 71996;
+    // path[42] = 71613;
+    // path[43] = 71230;
+    // path[44] = 70847;
+    // path[45] = 70464;
+    tf2::Quaternion quat;
     vector<geometry_msgs::PoseStamped> plan;
     ROS_INFO_STREAM(" PATH.SIZE() = "<<path.size());
     ros::Time plan_time = ros::Time::now();
@@ -1043,12 +1166,13 @@ vector<geometry_msgs::PoseStamped> ARAStar::search()
         pose.pose.position.x = wx;
         pose.pose.position.y = wy;
         pose.pose.position.z = 0.0;
-        pose.pose.orientation.x = 0.0;
-        pose.pose.orientation.y = 0.0;
-        pose.pose.orientation.z = 0.0;
-        pose.pose.orientation.w = 1.0;
+        quat.setRPY(0,0,angles::normalize_angle(compute_heading_angle(path[i-1],path[i])));
+        pose.pose.orientation.x = quat.x();
+        pose.pose.orientation.y = quat.y();
+        pose.pose.orientation.z = quat.z();
+        pose.pose.orientation.w = quat.w();
         plan.push_back(pose);
-        ROS_INFO_STREAM(" x = "<<plan[i].pose.position.x<<" AND y = "<<plan[i].pose.position.y<<" for path["<<i<<"] = "<<path[i]);
+        ROS_INFO_STREAM(" (x,y,theta) = ("<<plan[i].pose.position.x<<","<<plan[i].pose.position.y<<","<<plan[i].pose.orientation.z<<") for path["<<i<<"] = "<<path[i]);
     }
     nav_msgs::Path robot_path;
     robot_path.header.frame_id = "map";
@@ -1056,12 +1180,12 @@ vector<geometry_msgs::PoseStamped> ARAStar::search()
     msg.robot_pose = robot_path;
     robot_door_handle_path_pub.publish(msg);
 
-    ROS_INFO_STREAM("AB DELETION SHURU HOGA");
-    ROS_INFO_STREAM("visited.size() = "<<visited.size());
-    auto visited_end = visited.end();
-    visited_end--;
-    ROS_INFO_STREAM("visited_end->first = "<<visited_end->first.first);
-    unsigned int i=1;
+    // ROS_INFO_STREAM("AB DELETION SHURU HOGA");
+    // ROS_INFO_STREAM("visited.size() = "<<visited.size());
+    // auto visited_end = visited.end();
+    // visited_end--;
+    // ROS_INFO_STREAM("visited_end->first = "<<visited_end->first.first);
+    // unsigned int i=1;
     //delete dynamically allocated memory in visited
     //for(i=0;i<visited.size();i++)
     // for(auto it=visited.begin();it!=visited.end();it++)

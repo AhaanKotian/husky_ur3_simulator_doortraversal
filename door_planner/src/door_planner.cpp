@@ -98,9 +98,8 @@ namespace door_global_planner
         int destination = goal_idx_oned;
         //goal_node.idx = destination;
         int source = start_idx_oned;
-
-        double epsilon = 1.0;
-        ARAStar planner(source,destination,costmap_,epsilon);
+        ROS_INFO_STREAM("source = "<<source<<" & destination = "<<destination);
+        ARAStar planner(source,destination,costmap_);
         plan = planner.search();
         // //create ros node
         // planner.rosNode.reset(new ros::NodeHandle("door_planner"));
