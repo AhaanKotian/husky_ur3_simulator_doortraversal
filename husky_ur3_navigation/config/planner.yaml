@@ -106,10 +106,23 @@ SBPLLatticePlanner:
   
   
 DoorPlanner:
-  epsilon: 1.0
-  footprint: ['0.16,0.10', '0.16,-0.1', '-0.16,0.10', '-0.16,-0.1'] 
-  #footprint: ['0.5,0.35', '0.5,-0.35', '-0.5,0.35', '-0.5,-0.35']
-  reach: 0.5 # real_robot_reach: 0.3
-  door_handle_xyz: [0.775,-0.425,0.0] # door_handle_xyz(og sim): [1.80,0.71,0.0] # arms_lab_draft2_map: [0.775,-0.175,0.0] ; 
-  door_hinge_xyz: [0.775,-0.925,0.0] # door_hinge_xyz(og sim): [1.80,-0.20,0.0] # arms_lab_draft2_map: [0.775,-0.975,0.0] ; 
+  epsilon: 10.0
+  iterations: 100
+  #footprint: ['0.16,0.10', '0.16,-0.1', '-0.16,0.10', '-0.16,-0.1'] 
+  #footprint: ['0.30,0.20', '0.30,-0.2', '-0.30,0.20', '-0.30,-0.2']
+  #footprint: ['0.5,0.33', '0.5,-0.33', '-0.5,0.33', '-0.5,-0.33']
+  footprint: ['0.35,0.35', '0.35,-0.35', '-0.35,0.35', '-0.35,-0.35']
+  reach: 0.8 # real_robot_reach: 0.3
+  using_json: false
+  
+  #door_handle_xyz: [1.4,1.45,0.0] #(arms_1)
+  # door_handle_xyz(door_traversal_world_1): [2.975,1.975,0.0] 
+  # arms_lab_draft2_map: [0.775,-0.175,0.0] ; 
+  door_handle_xyz: [2.75,3.95,0.0] #3
+  
+  #door_hinge_xyz: [1.4,0.95,0.0] #(arms_1)
+  # door_hinge_xyz(door_traversal_world_1): [2.975,0.875,0.0] 
+  # arms_lab_draft2_map: [0.775,-0.975,0.0] ; 
+  door_hinge_xyz: [2.75,2.35,0.0] #3
+  
   max_door_angle_degree: 135.0

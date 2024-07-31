@@ -1,5 +1,6 @@
 #include "arastar.h"
 using namespace std;
+using json = nlohmann::json;
 ARAStar::ARAStar()
 {
 
@@ -43,6 +44,9 @@ ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* c
     //params
     (*rosNode).getParam("/move_base/DoorPlanner/epsilon",epsilon);
     (*rosNode).getParam("/move_base/DoorPlanner/reach",reach);
+    (*rosNode).getParam("/move_base/DoorPlanner/iterations",iterations);
+    (*rosNode).getParam("/move_base/DoorPlanner/using_json",using_json);
+
     vector<double> door_hinge_xyz, door_handle_xyz;
     (*rosNode).getParam("/move_base/DoorPlanner/door_handle_xyz",door_handle_xyz);
     door.door_handle_point.point.x = door_handle_xyz[0];door.door_handle_point.point.y = door_handle_xyz[1];door.door_handle_point.point.z = door_handle_xyz[2];
@@ -81,6 +85,7 @@ ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* c
     ROS_INFO_STREAM("start.h = "<<start.h);
     // vector<pair<double,double> > test_footprint = compute_robot_footprint(goal_wx,goal_wy,0.0);
     // ROS_INFO_STREAM("map_["<<goal.idx<<"] = "<<int(map_[goal.idx]));
+    ROS_INFO_STREAM("is_occupied() = "<<is_occupied(goal.idx,start.idx));
     // ros::Duration(20).sleep();
     // unsigned int idx_check;
     // costmap->worldToMap(double(1.87),double(0.60),mx,my);
@@ -94,7 +99,8 @@ ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* c
     // unsigned int test_idx = goal.idx, pred_test_idx = start.idx;
     // ROS_INFO_STREAM("GOAL TEST :");
     // vector<pair<unsigned int , vector<unsigned int> > > test;
-    // test = compute_a(test_idx,compute_heading_angle(pred_test_idx,test_idx));
+    // // test = compute_a(test_idx,compute_heading_angle(pred_test_idx,test_idx));
+    // test = compute_a(test_idx, M_PI_4);
     // for(pair<unsigned int , vector<unsigned int> > i:test)
     // {
     //     ROS_INFO_STREAM("a = "<<i.first<<" & rda_range = [");
@@ -105,13 +111,15 @@ ARAStar::ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* c
     // ros::Duration(20).sleep();
     //compute_robot_footprint() test
     // vector<pair<double,double> > test_footprint = compute_robot_footprint(1.87,0.60,M_PI_2);
-    
+    // ROS_INFO_STREAM("cost(goal.)");
+    // ros::Duration(20).sleep();
     
 
     
 };
 double ARAStar::heuristic(unsigned int idx, double theta, unsigned int a)
 {
+    theta = 0.0;
     unsigned int mx,my;
     costmap->indexToCells(idx,mx,my);
     double curr_wx,curr_wy;
@@ -258,6 +266,7 @@ bool ARAStar::door_collision_with_robot(vector<pair<double,double> > footprint, 
 };
 vector<pair<double,double> > ARAStar::compute_robot_footprint(double curr_wx, double curr_wy, double theta)
 {
+    theta = 0.0;
     vector<pair<double,double> > footprint;//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
     pair<double,double> footprint_coordinate;
     double x,y;
@@ -316,10 +325,10 @@ vector<pair<double,double> > ARAStar::compute_robot_footprint(double curr_wx, do
     // for(auto f:footprint)
     //     ROS_INFO_STREAM("("<<f.first<<","<<f.second<<")");
     // ROS_INFO_STREAM("]");
-    pub_line(&poly, &poly_pub, footprint[0].first, footprint[0].second, footprint[1].first, footprint[1].second,true);
-    pub_line(&poly, &poly_pub, footprint[1].first, footprint[1].second, footprint[3].first, footprint[3].second,true);
-    pub_line(&poly, &poly_pub, footprint[3].first, footprint[3].second, footprint[2].first, footprint[2].second,true);
-    pub_line(&poly, &poly_pub, footprint[2].first, footprint[2].second, footprint[0].first, footprint[0].second,true);
+    // pub_line(&poly, &poly_pub, footprint[0].first, footprint[0].second, footprint[1].first, footprint[1].second,true);
+    // pub_line(&poly, &poly_pub, footprint[1].first, footprint[1].second, footprint[3].first, footprint[3].second,true);
+    // pub_line(&poly, &poly_pub, footprint[3].first, footprint[3].second, footprint[2].first, footprint[2].second,true);
+    // pub_line(&poly, &poly_pub, footprint[2].first, footprint[2].second, footprint[0].first, footprint[0].second,true);
     return footprint;
 };
 
@@ -337,7 +346,7 @@ bool ARAStar::is_door_handle_reachable( unsigned int idx, double curr_ur3_wx, do
     // ROS_INFO_STREAM("(x_door_handle,y_door_handle) = ("<<x_door_handle<<","<<y_door_handle<<") for door_angle = "<<door_angle);
     double d = hypot( (x_door_handle - curr_ur3_wx), (y_door_handle - curr_ur3_wy) );
     // ROS_INFO_STREAM("d = "<<d);
-    if(d > (reach-0.1) ) //0.1 for accounting for reachability in max joint limits 
+    if(d > reach ) //0.1 for accounting for reachability in max joint limits 
         return false;
     else 
     {
@@ -368,7 +377,7 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
     //double transform_y = -1*transform.getOrigin().x();
     // double transform_x = transform.getOrigin().x();
     // double transform_y = transform.getOrigin().y();
-    double transform_x = 0.08;//0.08
+    double transform_x = 0.0;//0.08
     double transform_y = 0.0;//0.0
     curr_ur3_wx = curr_wx + transform_x*cos(theta) - transform_y*sin(theta);
     curr_ur3_wy = curr_wy + transform_x*sin(theta) + transform_y*cos(theta);
@@ -377,7 +386,8 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
     // curr_ur3_wy = curr_wy + transform_y;
 
     double d = hypot( (curr_ur3_wx - door.door_hinge_point.point.x) , (curr_ur3_wy - door.door_hinge_point.point.y) );
-    if(d > reach + door.radius)
+    // ROS_INFO_STREAM(d<<" > "<<reach<<" + "<<door.radius);
+    if(d+0.2 > reach + door.radius)
     {
         if(in_first_room(idx))
             reachable_door_angles_a.first = 0;
@@ -388,80 +398,89 @@ vector<pair<unsigned int , vector<unsigned int> > > ARAStar::compute_reachable_d
         return reachable_door_angles;
     }
     // ROS_INFO_STREAM("B");
-    vector<pair<double,double> > footprint = compute_robot_footprint(curr_wx,curr_wy,theta);//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
-    vector<unsigned int> a_1_door_angles,a_2_door_angles,a_3_door_angles;
-    unsigned int angle;
-    // ROS_INFO_STREAM("C");
-    for(angle=0;angle<=door.max_door_angle_degree;angle++)
-    {
-        if(!is_door_handle_reachable(idx,curr_ur3_wx,curr_ur3_wy,angle))
-            continue;
+    // else
+    // {
+    //     if(in_first_room(idx))
+    //     {
+    //         reachable_door_angles_a.first = 0;
+    //         reachable_door_angles_a.second = reachable_door_angles_i;
+    //         reachable_door_angles.push_back(reachable_door_angles_a);
+    //     }
+        vector<pair<double,double> > footprint = compute_robot_footprint(curr_wx,curr_wy,theta);//0th index is top_left corner, 1st index is top_right, 2nd index is bottom left, 3rd is bottom right
+        vector<unsigned int> a_1_door_angles,a_2_door_angles,a_3_door_angles;
+        unsigned int angle;
+        // ROS_INFO_STREAM("C");
+        for(angle=0;angle<=door.max_door_angle_degree;angle++)
+        {
+            if(!is_door_handle_reachable(idx,curr_ur3_wx,curr_ur3_wy,angle))
+                continue;
 
-        if(door_collision_with_robot(footprint,angle))
-        {
-            //ROS_INFO_STREAM("door_collision_with_robot() returned true for angle = "<<angle);
-            continue;
-        }
-        if(in_first_room(idx))
-        {
-            if(!inside_line_of_door(idx,angle))
-                a_1_door_angles.push_back(angle);
-            else
-                a_2_door_angles.push_back(angle);
-        }
-        else
-            a_3_door_angles.push_back(angle);
-    }//ROS_INFO_STREAM("D");
-    if(a_3_door_angles.size()>0)
-    {
-        reachable_door_angles_i = a_3_door_angles;
-        reachable_door_angles_a.first = 3;
-        reachable_door_angles_a.second = reachable_door_angles_i;
-        reachable_door_angles.push_back(reachable_door_angles_a);
-        
-    }
-    else
-    {
-        if(a_1_door_angles.size()==0 && a_2_door_angles.size()==0)//for faltu edge case
-        {
+            if(door_collision_with_robot(footprint,angle))
+            {
+                //ROS_INFO_STREAM("door_collision_with_robot() returned true for angle = "<<angle);
+                continue;
+            }
             if(in_first_room(idx))
-                reachable_door_angles_a.first = 0;
+            {
+                if(!inside_line_of_door(idx,angle))
+                    a_1_door_angles.push_back(angle);
+                else
+                    a_2_door_angles.push_back(angle);
+            }
             else
-                reachable_door_angles_a.first = 4;
-            reachable_door_angles_a.second = reachable_door_angles_i;
-            reachable_door_angles.push_back(reachable_door_angles_a);
-        }
-        else if(a_1_door_angles.size()==0)
+                a_3_door_angles.push_back(angle);
+        }//ROS_INFO_STREAM("D");
+        if(a_3_door_angles.size()>0)
         {
-            reachable_door_angles_i = a_2_door_angles;
-            reachable_door_angles_a.first = 2;
-            reachable_door_angles_a.second = reachable_door_angles_i;
-            reachable_door_angles.push_back(reachable_door_angles_a);
-            
-        }
-        else if(a_2_door_angles.size()==0)
-        {
-            reachable_door_angles_i = a_1_door_angles;
-            reachable_door_angles_a.first = 1;
+            reachable_door_angles_i = a_3_door_angles;
+            reachable_door_angles_a.first = 3;
             reachable_door_angles_a.second = reachable_door_angles_i;
             reachable_door_angles.push_back(reachable_door_angles_a);
             
         }
         else
         {
-            reachable_door_angles_i = a_1_door_angles;
-            reachable_door_angles_a.first = 1;
-            reachable_door_angles_a.second = reachable_door_angles_i;
-            reachable_door_angles.push_back(reachable_door_angles_a);
+            if(a_1_door_angles.size()==0 && a_2_door_angles.size()==0)//for faltu edge case
+            {
+                if(in_first_room(idx))
+                    reachable_door_angles_a.first = 0;
+                else
+                    reachable_door_angles_a.first = 4;
+                reachable_door_angles_a.second = reachable_door_angles_i;
+                reachable_door_angles.push_back(reachable_door_angles_a);
+            }
+            else if(a_1_door_angles.size()==0)
+            {
+                reachable_door_angles_i = a_2_door_angles;
+                reachable_door_angles_a.first = 2;
+                reachable_door_angles_a.second = reachable_door_angles_i;
+                reachable_door_angles.push_back(reachable_door_angles_a);
+                
+            }
+            else if(a_2_door_angles.size()==0)
+            {
+                reachable_door_angles_i = a_1_door_angles;
+                reachable_door_angles_a.first = 1;
+                reachable_door_angles_a.second = reachable_door_angles_i;
+                reachable_door_angles.push_back(reachable_door_angles_a);
+                
+            }
+            else
+            {
+                reachable_door_angles_i = a_1_door_angles;
+                reachable_door_angles_a.first = 1;
+                reachable_door_angles_a.second = reachable_door_angles_i;
+                reachable_door_angles.push_back(reachable_door_angles_a);
 
-            reachable_door_angles_i = a_2_door_angles;
-            reachable_door_angles_a.first = 2;
-            reachable_door_angles_a.second = reachable_door_angles_i;
-            reachable_door_angles.push_back(reachable_door_angles_a);
-            
+                reachable_door_angles_i = a_2_door_angles;
+                reachable_door_angles_a.first = 2;
+                reachable_door_angles_a.second = reachable_door_angles_i;
+                reachable_door_angles.push_back(reachable_door_angles_a);
+                
+            }
         }
-    }
-    // ROS_INFO_STREAM("POST if else");
+    // }
+    // ROS_INFO_STREAM("idx = "<<idx<<" reachable_door_angles.size() = "<<reachable_door_angles.size()<<" & reachable_door_angles[0].first = "<<reachable_door_angles[0].first);
     // for(pair<unsigned int , vector<unsigned int> > i:reachable_door_angles)
     // {
     //     ROS_INFO_STREAM("For Current ur3 pose : ("<<curr_ur3_wx<<","<<curr_ur3_wy<<") ; a = "<<i.first<<" & rda_range = [");
@@ -719,7 +738,7 @@ double ARAStar::cost(State s, State succ)
         //double transform_y = -1*transform.getOrigin().x();
         // double transform_x = transform.getOrigin().x();
         // double transform_y = transform.getOrigin().y();
-        double transform_x = 0.08;//0.08
+        double transform_x = 0.0;//0.08
         double transform_y = 0.0;//0.0
         double theta = compute_heading_angle(pred[make_pair(s.idx,s.a)].first,s.idx);
         // curr_ur3_wx = curr_wx + transform.getOrigin().x();
@@ -890,8 +909,10 @@ vector<unsigned int> ARAStar::compute_idx_path()
     ROS_INFO_STREAM("In compute_idx_path()");
     ROS_INFO_STREAM("start.idx = "<<start.idx<<" & goal.idx = "<<goal.idx);
     vector<unsigned int> idx_path;
-    idx_path.push_back(goal.idx);
-    pair<unsigned int,unsigned int> crawl = make_pair(goal.idx,goal.a);
+    // idx_path.push_back(goal.idx);
+    // pair<unsigned int,unsigned int> crawl = make_pair(goal.idx,goal.a);
+    idx_path.push_back((*(open.begin())).idx);
+    pair<unsigned int,unsigned int> crawl = make_pair((*(open.begin())).idx,(*(open.begin())).a);
     pair<unsigned int,unsigned int> post_last = make_pair(0,0);
     unsigned int mx,my,idx;
     double wx,wy;
@@ -945,6 +966,15 @@ double ARAStar::fvalue(State s)
 {
     return s.g + s.epsilon * s.h;
 };
+bool ARAStar::single_parent_check(State* s)
+{
+    for(auto& [key,val] : data.items())
+    {
+        if(val == s->idx)
+            return false;
+    }
+    return true;
+};
 void ARAStar::improvePath()
 {
     State s; bool found = false;//string state_to_h_msg, f_action_with_cost;
@@ -952,10 +982,15 @@ void ARAStar::improvePath()
     double curr_wx,curr_wy,succ_wx,succ_wy;
     ROS_INFO_STREAM(" fvalue(goal) = "<<fvalue(goal)<<" & goal.idx = "<<goal.idx<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin()))<<" & (*(open.begin())).idx = "<<(*(open.begin())).idx<<" & open.size() = "<<open.size());
     unsigned int k=1; vector<pair<unsigned int , vector<unsigned int> > > succ_a; pair<unsigned int,unsigned int> succ_state, s_state;
-    while( fvalue(goal) > fvalue(*(open.begin())) )
+    // State best_succ;
+    // while( fvalue(goal) > fvalue(*(open.begin())) )
+    while ( k <= iterations && (fvalue(goal) > fvalue(*(open.begin()))) )
     {
         // ROS_INFO_STREAM(" fvalue(goal) = "<<fvalue(goal)<<" & goal.idx = "<<goal.idx<<" & fvalue(*(open.begin())) = "<<fvalue(*(open.begin()))<<" & (*(open.begin())).idx = "<<(*(open.begin())).idx<<" & open.size() = "<<open.size());
-     
+        // best_succ.idx = INT32_MAX;
+        // best_succ.g = INT16_MAX;
+        // best_succ.h = INT16_MAX;
+        // best_succ.epsilon = epsilon;
         s = *(open.begin()); open.erase(*(open.begin()));
         // ROS_INFO_STREAM(" State s.idx = "<<s.idx<<" & goal.idx = "<<goal.idx<<" & fvalue(s) = "<<fvalue(s)<<" & fvalue(goal) = "<<fvalue(goal)<< " & epsilon = "<<epsilon<<" open.size() = "<<open.size());
         s_state.first = s.idx;s_state.second = s.a;
@@ -985,15 +1020,7 @@ void ARAStar::improvePath()
                     ROS_INFO_STREAM("For succ_idx = "<<succ_idx<<" ; {"<<successor_a.first<<", {"<<successor_a.second[0]<<" , "<<successor_a.second[successor_a.second.size()-1]<<" and size = "<<successor_a.second.size()<<"} }");
                 //Make pair of {successor_idx,successor_a} for visited and pred
                 succ_state.first = succ_idx; succ_state.second = successor_a.first;
-                // if( (s.a>=1 && s.a<=3) && ( successor_a.first >= 1 && successor_a.first <=3) )//(s.a>=1 && s.a<=3) && 
-                // {
-                //     if(!is_action_feasible(s,succ_idx,successor_a.second,successor_a.first))
-                //     {
-                //         ROS_INFO_STREAM("ACTION NOT FEASIBLE FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
-                //         continue;
-                //     }
-                //     ROS_INFO_STREAM("ACTION IS FEASIBLE!!! FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
-                // }
+                
                 costmap->indexToCells(succ_idx,mx,my);
                 costmap->mapToWorld(mx,my,succ_wx,succ_wy);
 
@@ -1003,14 +1030,14 @@ void ARAStar::improvePath()
                     ROS_INFO_STREAM("ACTION NOT FEASIBLE FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx<<" ; (succ_wx,succ_wy) = ("<<succ_wx<<","<<succ_wy<<")");
                     
                     //for visualisation
-                    pub_line(&tree, &tree_pub, curr_wx, curr_wy, succ_wx, succ_wy,false);   
+                    pub_line(&tree, &tree_pub, curr_wx, curr_wy, succ_wx, succ_wy,false,s.a,successor_a.first);   
                     
                     continue;
                 }   
                 ROS_INFO_STREAM("ACTION IS FEASIBLE!!! FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx<<" ; (succ_wx,succ_wy) = ("<<succ_wx<<","<<succ_wy<<")");
                 
                 //for visualisation
-                pub_line(&tree, &tree_pub, curr_wx, curr_wy, succ_wx, succ_wy,true);
+                pub_line(&tree, &tree_pub, curr_wx, curr_wy, succ_wx, succ_wy,true,s.a,successor_a.first);
 
                 if(visited[succ_state]==NULL)
                 {
@@ -1032,6 +1059,8 @@ void ARAStar::improvePath()
                     succ = visited[succ_state];
                     // ROS_INFO_STREAM("if ke andar succ->idx = "<<succ->idx);
                     pred[succ_state] = s_state;
+                    data[to_string(succ_state.first)+","+to_string(succ_state.second)] = s_state;
+                    // data[to_string(s_state.first)+","+to_string(s_state.second)] = succ_state;
                     // ROS_INFO_STREAM("s_state.first = "<<s_state.first<<" & s_state.second = "<<s_state.second<<" & pred[s_state].first = "<<pred[s_state].first<<" & pred[s_state].second = "<<pred[s_state].second);
                     
                 }
@@ -1045,6 +1074,8 @@ void ARAStar::improvePath()
                 {
                     (*succ).g = s.g + cost(s,(*succ));
                     pred[succ_state] = s_state;
+                    data[to_string(succ_state.first)+","+to_string(succ_state.second)] = s_state;
+                    // data[to_string(s_state.first)+","+to_string(s_state.second)] = succ_state;
                     // if( succ_state.first == goal.idx)
                     //     ROS_INFO_STREAM("goal.g = "<<(*succ).g);
                     
@@ -1053,23 +1084,57 @@ void ARAStar::improvePath()
                         open.insert((*succ));
                     else
                         incons.insert((*succ));
+
+                    if(succ_wx>=2.2 && succ->idx==0)
+                    {
+                        ROS_INFO_STREAM( "State ("<<succ->idx<<","<<succ->a<<") with (g+h) = ("<<succ->g<<"+"<<succ->h<<") was found in open at position = "<<distance(open.begin() , open.find((*succ))) );
+                    }
                     // ROS_INFO_STREAM(" POST IN_CLOSED() = "<< ros::Time::now().toSec()<<" FOR CLOSED.SIZE() = "<<closed.size());
                 }
+                state[to_string(succ->idx)+","+to_string(succ->a)] = make_pair(succ->g,succ->h);
                 // f_action_with_cost = "(" + to_string(s.idx) + "," + to_string(s.a) + ")->(" + to_string(succ_idx) + "," + to_string(successor_a.first) + "); c = " + to_string(cost(s,(*succ)));
                 // awc<<f_action_with_cost<<endl;
+                
+                // if( (fvalue(*succ) < fvalue(best_succ)) && single_parent_check(succ))
+                // {
+                //     best_succ.idx = succ->idx;
+                //     best_succ.g = succ->g;
+                //     best_succ.h = succ->h;
+                //     best_succ.a = succ->a;
+                //     best_succ.epsilon = succ->epsilon;
+                // }
+                // ROS_INFO_STREAM("best_succ.idx = "<<best_succ.idx<<" & fvalue(best_succ) = "<<fvalue(best_succ)<<" & (*succ).idx = "<<(*succ).idx<<" & fvalue(*succ) = "<<fvalue(*succ));
 
-                // if(!is_action_feasible(s,succ_idx,successor_a.second,successor_a.first))
+                // try
                 // {
-                //     ROS_INFO_STREAM("ACTION NOT FEASIBLE FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
-                //     continue;
+                //     unsigned int t = data.at(to_string(succ->idx));
+                //     ROS_INFO_STREAM(succ->idx<<" present in json");
+                //     if( (fvalue(*succ) < fvalue(best_succ)) && (s.idx != t) )
+                //     {
+                //         best_succ.idx = succ->idx;
+                //         best_succ.g = succ->g;
+                //         best_succ.h = succ->h;
+                //         best_succ.a = succ->a;
+                //         best_succ.epsilon = succ->epsilon;
+                //     }
+                //     ROS_INFO_STREAM("best_succ.idx = "<<best_succ.idx<<" & fvalue(best_succ) = "<<fvalue(best_succ)<<" & (*succ).idx = "<<(*succ).idx<<" & fvalue(*succ) = "<<fvalue(*succ));
                 // }
-                // ROS_INFO_STREAM("ACTION IS FEASIBLE!!! FROM s.idx = "<<s.idx<<" to succ_idx = "<<succ_idx);
-                // pred[succ_idx] = s.idx;
-                // if(pred[s.idx]==succ_idx)
+                // catch(const std::exception& e)
                 // {
-                //     ROS_INFO_STREAM("pred[succ_idx("<<succ_idx<<")] = s.idx("<<s.idx<<")");
-                //     ROS_INFO_STREAM("pred["<<s.idx<<"] = "<<pred[s.idx]);
+                //     ROS_INFO_STREAM(succ->idx<<" not present in json");
+                //     if( (fvalue(*succ) < fvalue(best_succ)) )
+                //     {
+                //         best_succ.idx = succ->idx;
+                //         best_succ.g = succ->g;
+                //         best_succ.h = succ->h;
+                //         best_succ.a = succ->a;
+                //         best_succ.epsilon = succ->epsilon;
+                //     }
+                //     ROS_INFO_STREAM("best_succ.idx = "<<best_succ.idx<<" & fvalue(best_succ) = "<<fvalue(best_succ)<<" & (*succ).idx = "<<(*succ).idx<<" & fvalue(*succ) = "<<fvalue(*succ));
                 // }
+                
+                 // ROS_INFO_STREAM("(*best_succ).idx = "<<(*best_succ).idx<<" & (*succ).idx = "<<(*succ).idx);
+                
                 // if(succ_idx == goal.idx)
                 // {
                 //     ROS_INFO_STREAM(" succ_idx("<<succ_idx<<") == goal("<<goal.idx<<")");
@@ -1078,12 +1143,17 @@ void ARAStar::improvePath()
                 // }
             }
         }
-        // if(found==true){
+        // if(best_succ.a != 4 && s.a !=4 && best_succ.idx < INT32_MAX)
+        //     data[to_string(s.idx)+","+to_string(s.a)] = make_pair(best_succ.idx,best_succ.a);
+        
+        // // if(found==true){
         //     break;}
     }
     // sth.close();
     // awc.close();
-
+    // data = pred;
+    // best_ss<<setw(4)<<data<<endl;
+    // states<<setw(4)<<state<<endl;
     // mfile.open("state_to_idx.txt");
     // while( getline(mfile,state_to_h_msg) )
     //     ROS_INFO_STREAM(state_to_h_msg);
@@ -1092,19 +1162,58 @@ void ARAStar::improvePath()
 vector<geometry_msgs::PoseStamped> ARAStar::search()
 {
     //ROS_INFO_STREAM(" ARAStar::search() first line ; fvalue(start) = "<<fvalue(start)<<" where start.h = "<<start.h<<" and start.g = "<<start.g<<" and epsilon = "<<epsilon);
-    open.insert(start);
-    improvePath();
-    //publish current epsilon-suboptimal solution
-    while( epsilon > 1 )
+    vector<unsigned int> path;
+    if(using_json)
     {
-        epsilon -= 0.5;
-        open.insert(incons.begin() , incons.end());
-        closed.clear();
-        improvePath();
-        //publish current epsilon-suboptimal solution
+        best_ss_json.open("/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/door_planner/files/best_succ_state.json");
+        json j;
+        best_ss_json >> j;
+        pair<unsigned int, unsigned int> i,start_pair,goal_pair;
+        start_pair.first = start.idx; start_pair.second = start.a;
+        goal_pair.first = goal.idx; goal_pair.second = goal.a;
+        i=goal_pair;
+        path.push_back(goal.idx);
+        // i=start_pair;
+        // path.push_back(start.idx);
+        int k=1;
+        try
+        {
+            while((i != start_pair) && (k<=iterations))
+            {
+                ROS_INFO_STREAM("i = ["<<i.first<<","<<i.second<<"]");
+                i = j.at(to_string(i.first)+","+to_string(i.second));
+                path.push_back(i.first);
+                ROS_INFO_STREAM("path["<<path.size()-1<<"] = "<<path[path.size()-1]);
+                k++;
+            }
+        }
+        catch(const std::exception& e)
+        {
+            ROS_INFO_STREAM(e.what() << '\n'<< "Key not existent ig");
+        }
+        
+        reverse(path.begin(),path.end());
     }
+    else
+    {
+        // best_ss.open("/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/door_planner/files/best_succ_state.json");
+        // states.open("/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/door_planner/files/states.json");
+        state[to_string(start.idx)+","+to_string(start.a)] = make_pair(start.g,start.h);
+        open.insert(start);
+        improvePath();
+        epsilon = 1;
+        //publish current epsilon-suboptimal solution
+        while( epsilon > 1 )
+        {
+            epsilon -= 0.5;
+            open.insert(incons.begin() , incons.end());
+            closed.clear();
+            improvePath();
+            //publish current epsilon-suboptimal solution
+        }
 
-    vector<unsigned int> path = compute_idx_path();
+        path = compute_idx_path();
+    }
     // vector<unsigned int> path(46);path[0] = 80034;path[1] = 80418;
     // path[2] = 80419;
     // path[3] = 80420;
@@ -1229,7 +1338,7 @@ void ARAStar::init_line(visualization_msgs::Marker* line_msg)
     line_msg->pose.orientation.w = 1.0;
     line_msg->scale.x = 0.01;  // in meters (width of segments)
 };
-void ARAStar::pub_line(visualization_msgs::Marker* line_msg, ros::Publisher* line_pub, double x1, double y1, double x2, double y2,bool b)
+void ARAStar::pub_line(visualization_msgs::Marker* line_msg, ros::Publisher* line_pub, double x1, double y1, double x2, double y2,bool b, unsigned int s_a, unsigned int succ_a)
 {
     // Update line_msg header
     line_msg->header.stamp = ros::Time::now();
@@ -1248,28 +1357,396 @@ void ARAStar::pub_line(visualization_msgs::Marker* line_msg, ros::Publisher* lin
 
     if(b==true)
     {
-        c1.r = 0.0;  // 1.0=255
-        c1.g = 1.0;
-        c1.b = 0.0;
-        c1.a = 0.5;  // alpha
+        if(s_a==0 && succ_a==0)//light blue
+        {ROS_INFO_STREAM("LIGHT BLUE COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 1.0;
+            c1.a = 5.1;  // alpha
 
-        c2.r = 0.0;  // 1.0=255
-        c2.g = 1.0;
-        c2.b = 0.0;
-        c2.a = 0.5;  // alpha
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 1.0;
+            c2.a = 5.1;  // alphas    
+        }
+        else if(s_a==0 && succ_a==1)//green
+        {ROS_INFO_STREAM("GREEN COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 0.0;
+            c1.a = 0.2;  // alpha
+
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 0.0;
+            c2.a = 0.2;  // alpha
+        }
+        // else if(s_a==0 && succ_a==2)
+        // {
+        //     c1.r = 1.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 1.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        // else if(s_a==0 && succ_a==3)
+        // {
+        //     c1.r = 1.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 1.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        // else if(s_a==1 && succ_a==0)
+        // {
+        //     c1.r = 1.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 1.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        else if(s_a==1 && succ_a==1)//blue
+        {ROS_INFO_STREAM("BLUE COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 0.0;
+            c1.b = 1.0;
+            c1.a = 0.5;  // alpha
+
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 0.0;
+            c2.b = 1.0;
+            c2.a = 0.5;  // alpha
+        }
+        else if(s_a==1 && succ_a==2)//orange
+        {ROS_INFO_STREAM("ORANGE COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.5;
+            c1.b = 0.0;
+            c1.a = 0.5;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.5;
+            c2.b = 0.0;
+            c2.a = 0.5;  // alpha
+        }
+        // else if(s_a==2 && succ_a==0)
+        // {
+        //     c1.r = 1.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 1.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        else if(s_a==2 && succ_a==1)//orange
+        {ROS_INFO_STREAM("ORANGE COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.5;
+            c1.b = 0.0;
+            c1.a = 0.5;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.5;
+            c2.b = 0.0;
+            c2.a = 0.5;  // alpha
+        }
+        else if(s_a==2 && succ_a==2)//blue
+        {ROS_INFO_STREAM("BLUE COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 0.0;
+            c1.b = 1.0;
+            c1.a = 0.5;  // alpha
+
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 0.0;
+            c2.b = 1.0;
+            c2.a = 0.5;  // alpha
+        }
+        else if(s_a==2 && succ_a==3)//green
+        {ROS_INFO_STREAM("GREEN COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 0.0;
+            c1.a = 0.2;  // alpha
+
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 0.0;
+            c2.a = 0.2;  // alpha
+        }
+        // else if(s_a==3 && succ_a==3)
+        // {
+        //     c1.r = 0.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 0.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        // else if(s_a==3 && succ_a==4)
+        // {
+        //     c1.r = 0.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 0.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        // else if(s_a==4 && succ_a==4)
+        // {
+        //     c1.r = 0.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 0.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        else
+        {ROS_INFO_STREAM("GREY COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.5;  // 1.0=255
+            c1.g = 0.5;
+            c1.b = 0.5;
+            c1.a = 5.0;  // alpha
+
+            c2.r = 0.5;  // 1.0=255
+            c2.g = 0.5;
+            c2.b = 0.5;
+            c2.a = 5.0;  // alpha
+        }
     }
     else
     {
-        c1.r = 1.0;  // 1.0=255
-        c1.g = 0.0;
-        c1.b = 0.0;
-        c1.a = 0.5;  // alpha
+        if(s_a==0 && succ_a==0)//light blue
+        {ROS_INFO_STREAM("LIGHT BLUE COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 1.0;
+            c1.a = 5.2;  // alpha
 
-        c2.r = 1.0;  // 1.0=255
-        c2.g = 0.0;
-        c2.b = 0.0;
-        c2.a = 0.5;  // alpha
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 1.0;
+            c2.a = 5.2;  // alpha
+        }
+        else if(s_a==0 && succ_a==1)//red
+        {ROS_INFO_STREAM("RED COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.0;
+            c1.b = 0.0;
+            c1.a = 0.2;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.0;
+            c2.b = 0.0;
+            c2.a = 0.2;  // alpha
+        }
+        else if(s_a==0 && succ_a==2)//yellow
+        {ROS_INFO_STREAM("YELLOW COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 0.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 0.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==0 && succ_a==3)//yellow
+        {ROS_INFO_STREAM("YELLOW COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 0.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 0.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==1 && succ_a==0)//yellow
+        {ROS_INFO_STREAM("YELLOW COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 0.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 0.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==1 && succ_a==1)//pink
+        {ROS_INFO_STREAM("PINK COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.4;
+            c1.b = 1.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.4;
+            c2.b = 1.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==1 && succ_a==2)//pink
+        {ROS_INFO_STREAM("PINK COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.4;
+            c1.b = 1.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.4;
+            c2.b = 1.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==2 && succ_a==0)//yellow
+        {ROS_INFO_STREAM("YELLOW COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 1.0;
+            c1.b = 0.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 1.0;
+            c2.b = 0.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==2 && succ_a==1)//pink
+        {ROS_INFO_STREAM("PINK COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.4;
+            c1.b = 1.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.4;
+            c2.b = 1.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==2 && succ_a==2)//pink
+        {ROS_INFO_STREAM("PINK COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.4;
+            c1.b = 1.0;
+            c1.a = 3.0;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.4;
+            c2.b = 1.0;
+            c2.a = 3.0;  // alpha
+        }
+        else if(s_a==2 && succ_a==3)//red
+        {ROS_INFO_STREAM("RED COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 1.0;  // 1.0=255
+            c1.g = 0.0;
+            c1.b = 0.0;
+            c1.a = 0.2;  // alpha
+
+            c2.r = 1.0;  // 1.0=255
+            c2.g = 0.0;
+            c2.b = 0.0;
+            c2.a = 0.2;  // alpha
+        }
+        // else if(s_a==3 && succ_a==3)
+        // {
+        //     c1.r = 0.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 0.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        // else if(s_a==3 && succ_a==4)
+        // {
+        //     c1.r = 0.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 0.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        // else if(s_a==4 && succ_a==4)
+        // {
+        //     c1.r = 0.0;  // 1.0=255
+        //     c1.g = 1.0;
+        //     c1.b = 0.0;
+        //     c1.a = 0.5;  // alpha
+
+        //     c2.r = 0.0;  // 1.0=255
+        //     c2.g = 1.0;
+        //     c2.b = 0.0;
+        //     c2.a = 0.5;  // alpha
+        // }
+        else
+        {ROS_INFO_STREAM("BLACK COLOUR s_a = "<<s_a<<" & succ_a = "<<succ_a);
+            c1.r = 0.0;  // 1.0=255
+            c1.g = 0.0;
+            c1.b = 0.0;
+            c1.a = 5.0;  // alpha
+
+            c2.r = 0.0;  // 1.0=255
+            c2.g = 0.0;
+            c2.b = 0.0;
+            c2.a = 5.0;  // alpha
+        }
     }
+    
+
+    // if(b==true)
+    // {
+    //     c1.r = 0.0;  // 1.0=255
+    //     c1.g = 1.0;
+    //     c1.b = 0.0;
+    //     c1.a = 0.5;  // alpha
+
+    //     c2.r = 0.0;  // 1.0=255
+    //     c2.g = 1.0;
+    //     c2.b = 0.0;
+    //     c2.a = 0.5;  // alpha
+    // }
+    // else
+    // {
+    //     c1.r = 1.0;  // 1.0=255
+    //     c1.g = 0.0;
+    //     c1.b = 0.0;
+    //     c1.a = 0.5;  // alpha
+
+    //     c2.r = 1.0;  // 1.0=255
+    //     c2.g = 0.0;
+    //     c2.b = 0.0;
+    //     c2.a = 0.5;  // alpha
+    // }
     line_msg->points.push_back(p1);
     line_msg->points.push_back(p2);
 

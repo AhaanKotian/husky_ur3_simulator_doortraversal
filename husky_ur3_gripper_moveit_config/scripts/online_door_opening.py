@@ -215,13 +215,13 @@ if __name__ == "__main__":
     scene = PlanningSceneInterface()
     start = PoseStamped()
     start.header.frame_id = "map"
-    start.pose.position.x = -0.075
+    start.pose.position.x = 0.025
     start.pose.position.y = -0.025
     start.pose.orientation.w = 1.0
     final_goal = PoseStamped()
     final_goal.header.frame_id = "map"
-    final_goal.pose.position.x = 1.525
-    final_goal.pose.position.y = -1.425
+    final_goal.pose.position.x = 1.475
+    final_goal.pose.position.y = -1.375
     final_goal.pose.orientation.w = 1.0
 
     start_i = PoseStamped()

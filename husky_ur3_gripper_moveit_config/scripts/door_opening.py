@@ -32,6 +32,7 @@ x = 0.0
 y = 0.0 
 theta = 0.0
 global_plan_pub = rospy.Publisher("/global_plan", Path, queue_size = 1)
+no_of_control_step = 6
 
 ik_solver = IK("ur3_base_link","ee_link")
 seed_state = [0.0] * ik_solver.number_of_joints
@@ -40,35 +41,27 @@ goal_state = [0.0] * ik_solver.number_of_joints
 
 group_name = "ur3_manipulator"
 move_group = MoveGroupCommander(group_name)
-FIXED_FRAME = 'odom'
+FIXED_FRAME = 'map'
 
-def get_global_plan():
+
+def get_global_plan(start,goal):
     # Create service client
     global response
     client = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
     # Create request message
-    start = PoseStamped()
-    start.header.frame_id = "map"
-    start.pose.position.x = -0.075
-    start.pose.position.y = -0.025
-    start.pose.orientation.w = 1.0
-    goal = PoseStamped()
-    goal.header.frame_id = "map"
-    goal.pose.position.x = 1.525
-    goal.pose.position.y = -1.425
-    goal.pose.orientation.w = 1.0
+    
     tolerance = 0.1
-
+    print("PLanner called at {},{}".format(rospy.Time.now().secs,rospy.Time.now().nsecs))
     # Call service
     try:
         response = client(start, goal, tolerance)
         # Print response message
-        print("Got plan with %d waypoints.", len(response.plan.poses))
+        print("Got plan with {} waypoints at time {},{}".format( len(response.plan.poses),rospy.Time.now().secs,rospy.Time.now().nsecs))
         print("response.plan.header.frame_id = ",response.plan.header.frame_id)
         # Print the pose and orientation of the first waypoint
         if response.plan.poses:
             for pose_i in response.plan.poses:
-                print("Waypoint pose: %f, %f, %f, %f, %f, %f, %f",
+                print("Waypoint pose: ",
                                 pose_i.pose.position.x,
                                 pose_i.pose.position.y,
                                 pose_i.pose.position.z,
@@ -84,7 +77,8 @@ def get_global_plan():
 
 def get_door_handle_path():
     global msg
-    msg = rospy.wait_for_message("/door_planner/door_handle_path", Message, timeout=5000)
+    msg = rospy.wait_for_message("/door_planner/door_handle_path", Message, timeout=1000)
+    print("Got door handle path")
     
 
 def newOdom(msg):
@@ -94,6 +88,10 @@ def newOdom(msg):
 
     x = msg.pose.pose.position.x
     y = msg.pose.pose.position.y
+
+    # transforming to map frame
+    x = x + start.pose.position.x
+    y = y + start.pose.position.y
 
     rot_q = msg.pose.pose.orientation
     (roll, pitch, theta) = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
@@ -117,20 +115,20 @@ def move_base(a,b):
         inc_x = goal.x -x
         inc_y = goal.y -y
         angle_to_goal = atan2(inc_y,inc_x)
-
+        print("goal.x-x = {} ; goal.y-y = {} ; angle_to_goal = {}; theta = {}".format(goal.x-x, goal.y-y, angle_to_goal, theta))
         if abs(angle_to_goal - theta) > 5*pi/180:
             speed.linear.x = 0.0
-            speed.angular.z = 0.3
+            speed.angular.z = -0.3
             if abs(angle_to_goal - theta) < 5*pi/180:        # 0.5이내로 들어오면 속도를 매우 줄여서 목표점을 지나쳐버리는 일이 없도록함.
-                speed.angular.z = 0.03
+                speed.angular.z = -0.1
                 speed.linear.x = 0.0
 
         
         else:
-            speed.linear.x = 0.2
+            speed.linear.x = 0.3
             speed.angular.z = 0.0
             if abs(goal.x-x) <0.3 and abs(goal.y-y)<0.3:    #x,y val이 0.3이내로 들어오면 속도 매우 줄임.
-                speed.angular.x = 0.05
+                speed.angular.x = 0.1
                 speed.angular.z = 0.0
 
         #print goal.x-x, goal.y-y, angle_to_goal-theta
@@ -197,12 +195,17 @@ def manipulation(base_pose_i):
 
 def move_to_base_waypoints():
     global response
-    i=0
+    i=1
+    
     for pose_i in response.plan.poses:
         move_base(pose_i.pose.position.x,pose_i.pose.position.y)
-        manipulation(pose_i)
+        if i>=no_of_control_step:
+            break
+        # manipulation(pose_i)
+        i = i+1
         rospy.sleep(5)
-        
+    # move_base(response.plan.poses[0].pose.position.x,response.plan.poses[0].pose.position.y)
+    # rospy.sleep(5)
     # move_base(response.plan.poses[2].pose.position.x,response.plan.poses[2].pose.position.y)
 
 if __name__ == "__main__":
@@ -212,22 +215,71 @@ if __name__ == "__main__":
     rospy.init_node('door_opening_s2', anonymous=True)
     robot = RobotCommander()
     scene = PlanningSceneInterface()
-
-    t1 = threading.Thread(target=get_global_plan, name='t1')
-    t2 = threading.Thread(target=get_door_handle_path, name='t2')
-    
-    t1.start()
-    t2.start()
-
-    t1.join()
-    t2.join()
-
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                 DisplayTrajectory,
                                                 queue_size=20)
     move_group.go([1.57,-2.27,1.93,-1.19,-1.57,0], wait=True) 
 
-    move_to_base_waypoints()
+    c = input("Enter 1 for offline planning; 2 for online planning : ")
+
+    pub = rospy.Publisher("/curr_pose", PoseStamped, queue_size = 1)
+
+    start = PoseStamped()
+    start.header.frame_id = "map"
+    # start.pose.position.x = -0.075
+    # start.pose.position.y = -0.025
+    start.pose.position.x = 1.0
+    start.pose.position.y = 5.0
+    start.pose.orientation.w = 1.0
+    goal = PoseStamped()
+    goal.header.frame_id = "map"
+    # goal.pose.position.x = 2.0
+    # goal.pose.position.y = 0.55
+    goal.pose.position.x = 4.0
+    goal.pose.position.y = 2.0
+    goal.pose.orientation.w = 1.0
+
+    
+    # start.header.frame_id = "odom"
+    # start.pose.position.x += 0.1
+    # start.pose.position.y += 0.1
+    # goal.header.frame_id = "odom"
+    # goal.pose.position.x += 0.1
+    # goal.pose.position.y += 0.1
+
+    start_i = PoseStamped()
+    start_i.header.frame_id = start.header.frame_id
+    start_i.pose.position.x = start.pose.position.x
+    start_i.pose.position.y = start.pose.position.y
+    start_i.pose.orientation.w = start.pose.orientation.w
+
+    while math.hypot((start_i.pose.position.x - goal.pose.position.x),(start_i.pose.position.y - goal.pose.position.y)) >= 0.1 :
+        print("goal(x,y) = ({},{}) & start_i(x,y) = ({},{})".format(goal.pose.position.x,goal.pose.position.y,start_i.pose.position.x,start_i.pose.position.y))
+        
+        t1 = threading.Thread(target=get_global_plan, args=[start_i,goal], name='t1')
+        t2 = threading.Thread(target=get_door_handle_path, name='t2')
+        
+        t1.start()
+        t2.start()
+
+        t1.join()
+        t2.join()
+
+        # move_to_base_waypoints()
+        # print("Sleeping")
+        # rospy.sleep(100)
+        if c==1:
+            break
+        if len(response.plan.poses) > 0:
+            if len(response.plan.poses) >= no_of_control_step:
+                start_i = copy.deepcopy(response.plan.poses[no_of_control_step - 1])
+            else :
+                start_i = copy.deepcopy(response.plan.poses[len(response.plan.poses) - 1])
+            pub.publish(start_i)
+        else:
+            bruh = input("NO PLAN FOUND TILL GOAL. ENTER 1 NOW")
+
+    print(" Done! Goal Reached! ")
 
 
 

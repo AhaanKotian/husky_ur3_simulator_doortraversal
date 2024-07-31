@@ -8,9 +8,10 @@
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   <!--- Run AMCL -->
-  <include file="$(find husky_ur3_navigation)/launch/amcl.launch" />
+  <!-- <include file="$(find husky_ur3_navigation)/launch/amcl.launch" /> -->
   <!--include file="$(find husky_ur3_navigation)/launch/amcl_test_code.launch" /-->
-
+  
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom_static_tf" args="1.0 5.0 0 0 0 0 /map /odom 100" /> 
   <!--- Run Move Base -->
   <include file="$(find husky_ur3_navigation)/launch/move_base.launch" />
   <!--include file="$(find husky_ur3_navigation)/launch/move_base_test_code.launch" /-->

@@ -28,9 +28,10 @@
 #include <fstream>
 #include "state.h"
 #include "Door.h"
+#include "json.hpp"
 
 using namespace std;
-
+using json = nlohmann::json;
 struct comp
 {
     bool operator()(const State& s1, const State& s2);
@@ -41,6 +42,7 @@ public:
     //bool compare(const State& s1, const State& s2);
     double goal_wx, goal_wy;
     double epsilon;
+    double iterations;
     set<State,comp> open;
     set<State,comp> incons;
     set<State,comp> closed;
@@ -73,8 +75,10 @@ public:
     ros::Publisher poly_pub;
     
     //files 
-    ofstream sth, awc;
-    ifstream mfile;
+    ofstream sth, awc, best_ss, states;
+    ifstream mfile, best_ss_json;
+    json data, state;
+    bool using_json;
     
     ARAStar();
     ARAStar(int start_idx_oned, int goal_idx_oned, costmap_2d::Costmap2D* costmap_);
@@ -89,6 +93,7 @@ public:
     bool is_occupied(unsigned int succ_idx, unsigned int s_idx);
     bool in_closed(State* succ);
     bool is_action_feasible(State s,unsigned int succ_idx,vector<unsigned int> succ_rda,unsigned int succ_a);
+    bool single_parent_check(State* s);
 
     vector<pair<unsigned int , vector<unsigned int> > > compute_a(unsigned int idx,double theta);
     double compute_manipulator_dist(unsigned int idx, int c);
@@ -106,7 +111,7 @@ public:
 
     //FOR VISUALISATION AND DEBUGGING
     void init_line(visualization_msgs::Marker* line_msg);
-    void pub_line(visualization_msgs::Marker* line_msg, ros::Publisher* line_pub, double x1, double y1, double x2, double y2,bool b);
+    void pub_line(visualization_msgs::Marker* line_msg, ros::Publisher* line_pub, double x1, double y1, double x2, double y2,bool b, unsigned int s_a, unsigned int succ_a);
 };
 
 

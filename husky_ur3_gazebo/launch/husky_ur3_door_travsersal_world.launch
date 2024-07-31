@@ -25,7 +25,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 -->
 <launch>
 
-  <arg name="world_name" default="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/worlds/door_traversal_world_1.world"/>
+  <arg name="world_name" default="/home/ahaan/iitb_ws/src/husky_ur3_simulator_doortraversal/worlds/door_traversal_world_3.world"/>
 
   <arg name="laser_enabled" default="false"/>
   <!-- <arg name="kinect_enabled" default="false"/> -->
@@ -42,8 +42,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 
   <include file="$(find husky_ur3_gazebo)/launch/spawn_husky.launch">
     <arg name="laser_enabled" value="$(arg laser_enabled)"/>
-    <arg name="x" value="1.27"/>
-    <arg name="y" value="1.69"/>
+    <arg name="x" value="1.0"/><!--(1.0,5.0) for 3; (0.6,2.25) for arms_1_origin ;  change these values in husky_ur3_amcl.launch in static transform publisher-->
+    <arg name="y" value="5.0"/>
     <arg name="z" value="0.0"/>
     <!-- <arg name="kinect_enabled" value="$(arg kinect_enabled)"/> -->
     <arg name="camera_h_enabled" value="$(arg camera_h_enabled)"/>
