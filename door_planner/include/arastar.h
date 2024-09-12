@@ -75,9 +75,9 @@ public:
     ros::Publisher poly_pub;
     
     //files 
-    ofstream sth, awc, best_ss, states;
-    ifstream mfile, best_ss_json;
-    json data, state;
+    ofstream sth, awc, best_ss, states, openq_out;
+    ifstream mfile, best_ss_json, openq_in;
+    json data, state, open_values;
     bool using_json;
     
     ARAStar();
@@ -108,6 +108,10 @@ public:
     void compute_cartesian_door_handle_path();
     
     double compute_heading_angle(unsigned int s1_idx, unsigned int s2_idx);
+
+    //files
+    // void saveOpenToFile();
+    // void loadOpenFromFile();
 
     //FOR VISUALISATION AND DEBUGGING
     void init_line(visualization_msgs::Marker* line_msg);
